@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LicitaControl IA</title>
+  <style>
+    :root{--navy:#071f3d;--blue:#0f67d8;--teal:#10b8a6;--bg:#f4f7fb;--card:#fff;--line:#dce4ee;--text:#16243a;--muted:#667085;--ok:#168457;--warn:#b67500;--bad:#c94c38}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}.side{background:linear-gradient(180deg,#04152a,var(--navy));color:#fff;padding:22px 16px}.brand{font-size:22px;font-weight:900;margin-bottom:24px}.brand span{color:#22d6bf}.nav{display:grid;gap:8px}.nav div{padding:12px 14px;border-radius:10px}.nav .active{background:var(--blue)}
+    main{padding:24px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.top h1{margin:0;font-size:26px}.pill{background:#e5f7ef;color:var(--ok);padding:8px 11px;border-radius:999px;font-weight:800;font-size:12px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 14px rgba(15,38,70,.05)}.card h2{margin:0 0 14px;font-size:18px;color:#175cae}
+    label{display:block;font-size:12px;font-weight:800;color:#46566c;margin-bottom:6px}.row{display:grid;grid-template-columns:1fr auto;gap:8px}.field{width:100%;padding:11px 12px;border:1px solid #cfd8e5;border-radius:9px;font:inherit}.btn{border:0;border-radius:9px;padding:11px 14px;font-weight:800;cursor:pointer}.primary{background:var(--blue);color:#fff}.secondary{background:#eef4fb;color:#245382}.muted{color:var(--muted)}.small{font-size:12px}.notice{margin-top:10px;padding:10px 12px;border-radius:9px;background:#eef6ff;color:#27527f;display:none}.notice.show{display:block}.notice.error{background:#fff0ed;color:#a83c2d}
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.metric{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}.metric b{font-size:24px;color:var(--blue)}.metric span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+    .details{display:grid;grid-template-columns:145px 1fr;gap:8px 12px}.details dt{color:var(--muted)}.details dd{margin:0;font-weight:650}.desc{margin-top:14px;padding:12px;background:#f8fafc;border:1px solid #e7ecf1;border-radius:10px;line-height:1.55}.items{margin-top:14px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px;border-bottom:1px solid #edf1f5}th{background:#f8fafc}
+    .score{font-size:42px;font-weight:900;color:var(--warn)}.reason{padding:9px 0;border-top:1px solid #edf1f5}.reason strong{float:right}.empty{padding:22px;text-align:center;color:var(--muted)}
+    @media(max-width:900px){.app{display:block}.side{display:none}.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}main{padding:14px}.details{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">LicitaControl <span>IA</span></div>
+    <div class="nav">
+      <div>⌂ Inicio</div><div class="active">◎ Radar</div><div>✦ Análisis IA</div><div>▦ Simulador</div><div>◫ Documentos</div><div>⚙ Configuración</div>
+    </div>
+  </aside>
+  <main>
+    <div class="top"><div><h1>Radar de Mercado Público</h1><div class="muted">Consulta real por código mediante backend seguro</div></div><div class="pill" id="statusPill">Backend pendiente</div></div>
+
+    <div class="metrics">
+      <div class="metric"><b id="mCodigo">—</b><span>Código consultado</span></div>
+      <div class="metric"><b id="mDias">—</b><span>Días al cierre</span></div>
+      <div class="metric"><b id="mItems">—</b><span>Ítems</span></div>
+      <div class="metric"><b id="mScore">—</b><span>Compatibilidad preliminar</span></div>
+    </div>
+
+    <div class="grid">
+      <section>
+        <div class="card">
+          <h2>1. Conexión segura</h2>
+          <label for="backend">URL del Cloudflare Worker</label>
+          <div class="row"><input id="backend" class="field" placeholder="https://licita-control-api.tu-subdominio.workers.dev"><button id="test" class="btn secondary">Probar</button></div>
+          <div class="small muted" style="margin-top:8px">El ticket de Mercado Público NO se guarda en este HTML. Debe existir únicamente como Secret <code>MERCADO_PUBLICO_TICKET</code> en Cloudflare.</div>
+          <div id="backendNotice" class="notice"></div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h2>2. Consultar licitación</h2>
+          <label for="codigo">Código de licitación</label>
+          <div class="row"><input id="codigo" class="field" value="1003-18-LP26"><button id="load" class="btn primary">Cargar licitación</button></div>
+          <div id="loadNotice" class="notice"></div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h2>Ficha normalizada</h2>
+          <div id="empty" class="empty">Conecta el backend y carga una licitación real.</div>
+          <div id="result" hidden>
+            <dl class="details">
+              <dt>Nombre</dt><dd id="nombre"></dd>
+              <dt>Estado</dt><dd id="estado"></dd>
+              <dt>Organismo</dt><dd id="organismo"></dd>
+              <dt>Unidad</dt><dd id="unidad"></dd>
+              <dt>Región</dt><dd id="region"></dd>
+              <dt>Comuna</dt><dd id="comuna"></dd>
+              <dt>Fecha cierre</dt><dd id="cierre"></dd>
+              <dt>Moneda</dt><dd id="moneda"></dd>
+            </dl>
+            <div id="descripcion" class="desc"></div>
+            <div class="items"><table><thead><tr><th>Producto</th><th>UNSPSC</th><th>Categoría</th><th>Cantidad</th></tr></thead><tbody id="items"></tbody></table></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2>Compatibilidad V0.1</h2>
+        <div class="score" id="score">—</div>
+        <div class="muted small">Reglas explicables de demostración. No es todavía análisis IA.</div>
+        <div id="reasons" style="margin-top:14px"><div class="empty">Carga una licitación para evaluar.</div></div>
+      </aside>
+    </div>
+  </main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let backend=localStorage.getItem('licitaControlBackend')||'';
+$('backend').value=backend;
+function clean(v){return String(v||'').trim().replace(/\/+$/,'')}
+function notice(id,msg,error=false){const n=$(id);n.textContent=msg;n.className='notice show'+(error?' error':'')}
+function fmtDate(v){if(!v)return 'No informado';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString('es-CL')}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function testBackend(){backend=clean($('backend').value);if(!backend)return notice('backendNotice','Ingresa la URL del Worker.',true);notice('backendNotice','Probando conexión…');try{const r=await fetch(backend+'/health');const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Backend no disponible');localStorage.setItem('licitaControlBackend',backend);$('statusPill').textContent='Backend conectado';notice('backendNotice',d.mercadoPublicoTicketConfigured?'Backend conectado y Secret configurado.':'Backend conectado, pero falta el Secret MERCADO_PUBLICO_TICKET.',!d.mercadoPublicoTicketConfigured)}catch(e){$('statusPill').textContent='Error de conexión';notice('backendNotice',e.message,true)}}
+function score(lic){let total=0,reasons=[];const text=((lic.nombre||'')+' '+(lic.descripcion||'')+' '+(lic.items||[]).map(i=>(i.nombreProducto||'')+' '+(i.categoria||'')).join(' ')).toLowerCase();const region=(lic.comprador?.region||'').toLowerCase();const forest=/forest|madera|silv|harvester|forwarder|madereo|astill|tritur/.test(text);const machinery=/maquinaria|excavadora|cargadora|tractor|camión|camion/.test(text);const south=/los lagos|los ríos|la araucanía|araucanía/.test(region);if(forest){total+=45;reasons.push(['Coincidencia forestal',45])}else reasons.push(['Coincidencia forestal',0]);if(machinery){total+=20;reasons.push(['Maquinaria/equipos',20])}else reasons.push(['Maquinaria/equipos',0]);if(south){total+=20;reasons.push(['Región objetivo demo',20])}else reasons.push(['Región objetivo demo',0]);const days=Number(lic.diasCierre);if(Number.isFinite(days)&&days>=5){total+=15;reasons.push(['Tiempo para postular',15])}else reasons.push(['Tiempo para postular',0]);return{total,reasons}}
+function render(lic){$('empty').hidden=true;$('result').hidden=false;$('nombre').textContent=lic.nombre||'No informado';$('estado').textContent=lic.estado||'No informado';$('organismo').textContent=lic.comprador?.nombreOrganismo||'No informado';$('unidad').textContent=lic.comprador?.nombreUnidad||'No informado';$('region').textContent=lic.comprador?.region||'No informado';$('comuna').textContent=lic.comprador?.comuna||'No informado';$('cierre').textContent=fmtDate(lic.fechas?.cierre);$('moneda').textContent=lic.moneda||'No informado';$('descripcion').textContent=lic.descripcion||'Sin descripción';$('items').innerHTML=(lic.items||[]).map(i=>`<tr><td>${esc(i.nombreProducto||'')}</td><td>${esc(i.codigoProducto||'')}</td><td>${esc(i.categoria||i.codigoCategoria||'')}</td><td>${esc(i.cantidad??'—')} ${esc(i.unidadMedida||'')}</td></tr>`).join('')||'<tr><td colspan="4">Sin ítems informados</td></tr>';$('mCodigo').textContent=lic.codigo||'—';$('mDias').textContent=lic.diasCierre??'—';$('mItems').textContent=(lic.items||[]).length;const s=score(lic);$('score').textContent=s.total+'%';$('mScore').textContent=s.total+'%';$('reasons').innerHTML=s.reasons.map(([n,p])=>`<div class="reason">${esc(n)}<strong>+${p}</strong></div>`).join('')}
+async function load(){backend=clean($('backend').value);const codigo=$('codigo').value.trim().toUpperCase();if(!backend)return notice('loadNotice','Primero configura y prueba el backend.',true);if(!codigo)return notice('loadNotice','Ingresa un código.',true);notice('loadNotice','Consultando Mercado Público…');$('load').disabled=true;try{const r=await fetch(backend+'/api/licitacion/'+encodeURIComponent(codigo));const d=await r.json();if(!r.ok||!d.ok||!d.licitacion)throw new Error(d.error||'No fue posible cargar la licitación');render(d.licitacion);notice('loadNotice','Licitación cargada desde Mercado Público.')}catch(e){notice('loadNotice',e.message,true)}finally{$('load').disabled=false}}
+$('test').addEventListener('click',testBackend);$('load').addEventListener('click',load);$('codigo').addEventListener('keydown',e=>{if(e.key==='Enter')load()});
+</script>
+</body>
+</html>
