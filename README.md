@@ -7,6 +7,7 @@ LicitaControl IA es una aplicación independiente para encontrar, entender y pri
 Este repositorio contiene el primer MVP reconstruido:
 
 - Frontend PWA estático en `frontend/`.
+- Entrada raíz `index.html` que dirige a la PWA.
 - Cloudflare Worker en `worker/`.
 - `GET /health` para comprobar la configuración.
 - `GET /api/licitacion/{codigo}` para consultar y normalizar una licitación real.
@@ -85,4 +86,3 @@ Nunca escribas el ticket en `wrangler.jsonc`, el frontend, un commit, una captur
 5. Incorporar persistencia multiempresa.
 6. Analizar bases y anexos con citas al documento y página.
 7. Añadir auditor de admisibilidad, simulador y evaluación económica.
-
