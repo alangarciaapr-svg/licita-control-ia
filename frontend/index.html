@@ -142,7 +142,12 @@
           <button class="icon-button" value="cancel" aria-label="Cerrar">×</button>
         </div>
         <label for="api-url">URL del Cloudflare Worker</label>
-        <input id="api-url" type="url" placeholder="http://localhost:8787" required />
+        <input
+          id="api-url"
+          type="url"
+          placeholder="https://licita-control-api.alangarcia-apr.workers.dev"
+          required
+        />
         <p>Se guarda solo en este navegador. No pegues aquí el ticket de Mercado Público.</p>
         <div class="dialog-actions">
           <button id="test-api" class="ghost-button" type="button">Probar conexión</button>
@@ -154,4 +159,3 @@
     <script type="module" src="./app.js"></script>
   </body>
 </html>
-

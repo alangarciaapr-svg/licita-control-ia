@@ -48,7 +48,7 @@ Inicia la API:
 npm run dev:api
 ```
 
-Sirve `frontend/` con cualquier servidor estático. En la pantalla **Conexión API**, usa `http://localhost:8787`.
+Sirve `frontend/` con cualquier servidor estático. El frontend usa por defecto el Worker desplegado. Para desarrollo local, abre **Conexión API** y cambia la URL a `http://localhost:8787`.
 
 ## Validación
 
@@ -69,6 +69,8 @@ npm run deploy
 ```
 
 Nunca escribas el ticket en `wrangler.jsonc`, el frontend, un commit, una captura o un mensaje.
+
+API de producción: `https://licita-control-api.alangarcia-apr.workers.dev`.
 
 ## Límites del MVP
 

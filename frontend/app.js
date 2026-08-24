@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "http://localhost:8787";
+const DEFAULT_API_URL = "https://licita-control-api.alangarcia-apr.workers.dev";
 const API_STORAGE_KEY = "licita-control-api-url";
 
 const elements = {
@@ -186,4 +186,3 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 }
 
 void testConnection();
-
