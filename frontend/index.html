@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b1c17" />
+    <meta
+      name="description"
+      content="LicitaControl IA transforma datos de Mercado Público en oportunidades explicables."
+    />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>LicitaControl IA</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#inicio" aria-label="LicitaControl IA, inicio">
+          <span class="brand-mark">LC</span>
+          <span><strong>LicitaControl</strong><small>INTELIGENCIA PÚBLICA</small></span>
+        </a>
+
+        <nav class="nav" aria-label="Navegación principal">
+          <a class="active" href="#inicio"><span>01</span> Inicio</a>
+          <a href="#radar"><span>02</span> Radar</a>
+          <a href="#resultado"><span>03</span> Análisis</a>
+          <a href="#roadmap"><span>04</span> Hoja de ruta</a>
+        </nav>
+
+        <div class="sidebar-note">
+          <span class="status-dot"></span>
+          <div><strong>MVP 0.1</strong><small>Consulta individual segura</small></div>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">RADAR DE OPORTUNIDADES</span>
+            <h1>Decide mejor antes de postular.</h1>
+          </div>
+          <button id="open-settings" class="ghost-button" type="button">Conexión API</button>
+        </header>
+
+        <section id="inicio" class="hero-panel">
+          <div>
+            <span class="pill">MERCADO PÚBLICO · CHILE</span>
+            <h2>De miles de procesos<br />a una decisión clara.</h2>
+            <p>
+              Consulta una licitación real, revisa sus datos esenciales y prepara una evaluación explicable.
+              Sin exponer credenciales y sin inventar información.
+            </p>
+          </div>
+          <div class="hero-metric">
+            <span>OBJETIVO</span>
+            <strong>POSTULAR</strong>
+            <small>REVISAR · DESCARTAR</small>
+          </div>
+        </section>
+
+        <section class="metrics" aria-label="Estado del MVP">
+          <article><span>Fuente</span><strong>Mercado Público</strong><small>API oficial</small></article>
+          <article><span>Seguridad</span><strong>Ticket aislado</strong><small>Cloudflare Secret</small></article>
+          <article><span>Motor actual</span><strong>Datos reales</strong><small>Sin IA generativa</small></article>
+          <article><span>Próximo hito</span><strong>Radar automático</strong><small>Perfil + reglas</small></article>
+        </section>
+
+        <section id="radar" class="workspace-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">CONSULTA SEGURA</span>
+              <h2>Cargar licitación</h2>
+            </div>
+            <span id="api-badge" class="connection-badge neutral">API sin verificar</span>
+          </div>
+
+          <form id="search-form" class="search-form">
+            <label for="tender-code">Código de licitación</label>
+            <div class="search-row">
+              <input
+                id="tender-code"
+                name="tender-code"
+                type="text"
+                value="1003-18-LP26"
+                placeholder="Ej. 1003-18-LP26"
+                autocomplete="off"
+                maxlength="40"
+                required
+              />
+              <button id="search-button" class="primary-button" type="submit">Cargar licitación</button>
+            </div>
+            <p>El navegador envía solo el código. El ticket permanece dentro del Worker.</p>
+          </form>
+
+          <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+        </section>
+
+        <section id="resultado" class="result-panel" hidden>
+          <div class="result-header">
+            <div>
+              <span id="result-state" class="pill"></span>
+              <h2 id="result-title"></h2>
+              <p id="result-code"></p>
+            </div>
+            <div class="decision-placeholder">
+              <span>DECISIÓN</span>
+              <strong>PENDIENTE</strong>
+              <small>Requiere perfil empresarial</small>
+            </div>
+          </div>
+
+          <dl id="result-facts" class="facts"></dl>
+
+          <div class="items-block">
+            <div class="section-heading compact">
+              <div><span class="eyebrow">PRODUCTOS Y SERVICIOS</span><h3>Ítems solicitados</h3></div>
+              <span id="items-count" class="count-chip"></span>
+            </div>
+            <div id="result-items" class="items-list"></div>
+          </div>
+        </section>
+
+        <section id="roadmap" class="roadmap">
+          <div class="section-heading">
+            <div><span class="eyebrow">EVOLUCIÓN CONTROLADA</span><h2>Hoja de ruta</h2></div>
+          </div>
+          <ol>
+            <li class="done"><span>01</span><div><strong>Consulta individual</strong><small>Worker seguro y datos normalizados</small></div></li>
+            <li><span>02</span><div><strong>Radar automático</strong><small>Licitaciones activas y Compra Ágil</small></div></li>
+            <li><span>03</span><div><strong>Perfil + compatibilidad</strong><small>Reglas objetivas y explicables</small></div></li>
+            <li><span>04</span><div><strong>Análisis documental</strong><small>Requisitos con documento y página</small></div></li>
+            <li><span>05</span><div><strong>Decisión comercial</strong><small>Admisibilidad, puntaje, costos y margen</small></div></li>
+          </ol>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="settings-dialog">
+      <form id="settings-form" method="dialog">
+        <div class="dialog-heading">
+          <div><span class="eyebrow">CONFIGURACIÓN LOCAL</span><h2>Conexión API</h2></div>
+          <button class="icon-button" value="cancel" aria-label="Cerrar">×</button>
+        </div>
+        <label for="api-url">URL del Cloudflare Worker</label>
+        <input id="api-url" type="url" placeholder="http://localhost:8787" required />
+        <p>Se guarda solo en este navegador. No pegues aquí el ticket de Mercado Público.</p>
+        <div class="dialog-actions">
+          <button id="test-api" class="ghost-button" type="button">Probar conexión</button>
+          <button class="primary-button" value="save">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
+

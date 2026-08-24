@@ -1,0 +1,4 @@
+# Copia este archivo como .dev.vars y reemplaza el marcador local.
+# Nunca confirmes .dev.vars en Git.
+MERCADO_PUBLICO_TICKET=solo-desarrollo-local
+

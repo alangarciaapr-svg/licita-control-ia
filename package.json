@@ -1,0 +1,16 @@
+{
+  "name": "licita-control-ia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Radar inteligente y auditable para oportunidades de Mercado Público de Chile.",
+  "scripts": {
+    "check": "npm --prefix worker run check",
+    "test": "npm --prefix worker test",
+    "dev:api": "npm --prefix worker run dev",
+    "deploy:api": "npm --prefix worker run deploy"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
+
