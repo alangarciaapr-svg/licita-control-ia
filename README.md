@@ -72,6 +72,10 @@ Nunca escribas el ticket en `wrangler.jsonc`, el frontend, un commit, una captur
 
 API de producción: `https://licita-control-api.alangarcia-apr.workers.dev`.
 
+Frontend de producción: `https://licita-control-ia.pages.dev`.
+
+El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita ni recibe el ticket; todas las consultas pasan por el Worker.
+
 ## Límites del MVP
 
 - Consulta una licitación por código; todavía no sincroniza el universo completo.
