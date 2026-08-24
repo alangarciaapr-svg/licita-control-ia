@@ -5,7 +5,8 @@
   "compatibility_date": "2026-08-24",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "MERCADO_PUBLICO_BASE_URL": "https://api.mercadopublico.cl/servicios/v1/publico"
+    "MERCADO_PUBLICO_BASE_URL": "https://api.mercadopublico.cl/servicios/v1/publico",
+    "MERCADO_PUBLICO_COMPRA_AGIL_BASE_URL": "https://api2.mercadopublico.cl"
   },
   "observability": {
     "enabled": true,
@@ -19,4 +20,3 @@
     }
   }
 }
-

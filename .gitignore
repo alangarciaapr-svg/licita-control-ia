@@ -9,7 +9,7 @@ worker/.dev.vars
 !.env.example
 dist/
 coverage/
+work/
 *.log
 .DS_Store
 Thumbs.db
-

@@ -1,6 +1,6 @@
 # LicitaControl IA
 
-LicitaControl IA es una aplicación independiente para encontrar, entender y priorizar oportunidades de Mercado Público. La meta no es reemplazar el portal oficial: es transformar sus datos en una decisión explicable para cada empresa.
+LicitaControl IA es un radar operativo especializado en Compra Ágil para encontrar, entender y priorizar oportunidades de Mercado Público. La meta no es reemplazar el portal oficial: es transformar sus datos en una decisión explicable para cada empresa.
 
 ## Estado actual
 
@@ -10,7 +10,9 @@ Este repositorio contiene el primer MVP reconstruido:
 - Entrada raíz `index.html` que dirige a la PWA.
 - Cloudflare Worker en `worker/`.
 - `GET /health` para comprobar la configuración.
-- `GET /api/licitacion/{codigo}` para consultar y normalizar una licitación real.
+- `GET /api/compra-agil` para buscar oportunidades abiertas por palabra clave, región y página.
+- `GET /api/compra-agil/{codigo}` para consultar el detalle oficial de una Compra Ágil.
+- `GET /api/licitacion/{codigo}` se conserva para compatibilidad con la consulta individual anterior.
 - Ticket de Mercado Público aislado en el secreto `MERCADO_PUBLICO_TICKET`.
 - Pruebas unitarias del normalizador y validación TypeScript.
 
@@ -78,17 +80,20 @@ El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita
 
 ## Límites del MVP
 
-- Consulta una licitación por código; todavía no sincroniza el universo completo.
+- Consulta en tiempo real la API beta de Compra Ágil; todavía no mantiene una sincronización histórica propia.
 - No incorpora autenticación, base de datos ni análisis documental.
-- El porcentaje de compatibilidad se implementará después de definir el perfil empresarial y reglas auditables.
+- La urgencia se calcula de forma determinista desde la fecha de cierre; no representa probabilidad de adjudicación.
+- La compatibilidad empresarial se implementará después de definir el perfil y reglas auditables.
 - La postulación oficial continúa realizándose en Mercado Público.
 
 ## Próximos hitos
 
-1. Estabilizar la consulta individual real.
-2. Crear búsqueda automática de licitaciones activas y Compra Ágil.
-3. Añadir perfil empresarial, favoritos y descartados.
+1. Estabilizar el radar real de Compra Ágil.
+2. Añadir perfil empresarial, favoritos y descartados.
+3. Implementar alertas de cierre y nuevas coincidencias.
 4. Implementar compatibilidad objetiva por servicio, región, monto, equipo y plazo.
 5. Incorporar persistencia multiempresa.
 6. Analizar bases y anexos con citas al documento y página.
 7. Añadir auditor de admisibilidad, simulador y evaluación económica.
+
+La estrategia de producto y el análisis comparativo están documentados en `docs/PRODUCTO_COMPRA_AGIL.md`.
