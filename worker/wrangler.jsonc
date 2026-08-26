@@ -15,8 +15,8 @@
       "head_sampling_rate": 1
     },
     "traces": {
-      "enabled": true,
-      "head_sampling_rate": 0.05
+      // v1 carries the ticket in the upstream query string; do not capture fetch URLs.
+      "enabled": false
     }
   }
 }

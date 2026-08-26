@@ -1,357 +1,174 @@
-const DEFAULT_API_URL = "https://licita-control-api.alangarcia-apr.workers.dev";
-const API_STORAGE_KEY = "licita-control-api-url";
+import { formatOfficialDate, validateTenderCode, validateApiUrl } from './view-utils.js';
 
-const elements = {
-  apiBadge: document.querySelector("#api-badge"),
-  apiUrl: document.querySelector("#api-url"),
-  closeDetail: document.querySelector("#close-detail"),
-  detail: document.querySelector("#detalle"),
-  detailCode: document.querySelector("#detail-code"),
-  detailDescription: document.querySelector("#detail-description"),
-  detailFacts: document.querySelector("#detail-facts"),
-  detailStatus: document.querySelector("#detail-status"),
-  detailTitle: document.querySelector("#detail-title"),
-  detailUrgency: document.querySelector("#detail-urgency"),
-  dialog: document.querySelector("#settings-dialog"),
-  form: document.querySelector("#radar-form"),
-  list: document.querySelector("#opportunity-list"),
-  message: document.querySelector("#message"),
-  nextPage: document.querySelector("#next-page"),
-  openSettings: document.querySelector("#open-settings"),
-  pageIndicator: document.querySelector("#page-indicator"),
-  previousPage: document.querySelector("#previous-page"),
-  productCount: document.querySelector("#product-count"),
-  productList: document.querySelector("#product-list"),
-  query: document.querySelector("#search-query"),
-  radarButton: document.querySelector("#radar-button"),
-  results: document.querySelector("#radar-results"),
-  resultContext: document.querySelector("#result-context"),
-  resultCount: document.querySelector("#result-count"),
-  region: document.querySelector("#region-filter"),
-  settingsForm: document.querySelector("#settings-form"),
-  testApi: document.querySelector("#test-api"),
-  verificationList: document.querySelector("#verification-list"),
-};
+const DEFAULT_API_URL = 'https://licita-control-api.alangarcia-apr.workers.dev';
+const API_STORAGE_KEY = 'licita-control-api-url';
+const byId = (id) => document.getElementById(id);
+let apiUrl = DEFAULT_API_URL;
+try { apiUrl = validateApiUrl(localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_URL); } catch { /* Use the trusted default. */ }
+let activeRequest;
+let currentCode = '';
 
-const radarState = { page: 1, totalPages: 0 };
-
-function getApiUrl() {
-  return (localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_URL).replace(/\/$/, "");
+function setMessage(text, error = false) {
+  byId('message').textContent = text;
+  byId('message').className = `message${error ? ' error' : ''}`;
+  byId('message').hidden = !text;
 }
 
-function setMessage(text, type = "info") {
-  elements.message.textContent = text;
-  elements.message.className = `message ${type === "error" ? "error" : ""}`;
-  elements.message.hidden = !text;
+function setApiState(state, label) {
+  byId('api-badge').className = `connection-badge ${state}`;
+  byId('api-badge').textContent = label;
 }
 
-function setApiState(state, text) {
-  elements.apiBadge.className = `connection-badge ${state}`;
-  elements.apiBadge.textContent = text;
-}
-
-async function requestJson(path) {
-  const response = await fetch(`${getApiUrl()}${path}`, { headers: { Accept: "application/json" } });
+async function requestJson(base, path, signal) {
+  const response = await fetch(`${base}${path}`, { headers: { Accept: 'application/json' }, signal, cache: 'no-store' });
   const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(payload?.error?.message || `La API respondió con estado ${response.status}.`);
-  }
+  if (!response.ok) throw new Error(payload?.error?.message || 'No se pudo completar la consulta. Intenta nuevamente.');
+  if (!payload || typeof payload !== 'object') throw new Error('La API devolvió una respuesta inesperada.');
   return payload;
 }
 
-async function testConnection() {
-  setApiState("neutral", "Verificando API…");
-  try {
-    const health = await requestJson("/health");
-    if (!health.ticketConfigured) {
-      setApiState("disconnected", "API sin ticket");
-      setMessage("El Worker responde, pero falta configurar la integración.", "error");
-      return false;
-    }
-    setApiState("connected", "API conectada");
-    return true;
-  } catch (error) {
-    setApiState("disconnected", "API no disponible");
-    setMessage(error instanceof Error ? error.message : "No fue posible conectar con la API.", "error");
-    return false;
-  }
+async function testServer(base = apiUrl) {
+  const health = await requestJson(base, '/health', AbortSignal.timeout(20000));
+  if (health.ok !== true) throw new Error('El servidor no confirmó su disponibilidad.');
+  if (!health.ticketConfigured) throw new Error('El servidor responde, pero la integración no está configurada.');
+  return 'Servidor disponible. El acceso a datos se verifica al consultar una licitación.';
 }
 
-function formatDate(value) {
-  if (!value) return "No informado";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short" }).format(parsed);
+function node(tag, text, className) {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  if (className) element.className = className;
+  return element;
 }
 
-function formatMoney(value, currency = "CLP") {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return "No informado";
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: currency || "CLP",
-    maximumFractionDigits: 0,
-  }).format(Number(value));
-}
-
-function urgencyInfo(hours) {
-  if (hours === null || hours === undefined) return { className: "", label: "Cierre por verificar", short: "Sin cálculo" };
-  if (hours <= 0) return { className: "critical", label: "Cierre alcanzado", short: "0 h" };
-  if (hours <= 24) return { className: "critical", label: `Cierra en ${hours} h`, short: `${hours} h` };
-  if (hours <= 72) return { className: "", label: `Alta urgencia · ${hours} h`, short: `${hours} h` };
-  const days = Math.ceil(hours / 24);
-  return { className: "", label: `Cierra en ${days} días`, short: `${days} días` };
-}
-
-function textOr(value, fallback = "No informado") {
-  return value === null || value === undefined || value === "" ? fallback : String(value);
-}
-
-function createSignal(text) {
-  const signal = document.createElement("span");
-  signal.className = "signal";
-  signal.textContent = text;
-  return signal;
-}
-
-function createOpportunity(item) {
-  const article = document.createElement("article");
-  article.className = "opportunity";
-
-  const top = document.createElement("div");
-  top.className = "opportunity-top";
-  const code = document.createElement("span");
-  code.className = "opportunity-code";
-  code.textContent = item.code;
-  const urgency = urgencyInfo(item.dates?.hoursRemaining);
-  const urgencyChip = document.createElement("span");
-  urgencyChip.className = `urgency-chip ${urgency.className}`;
-  urgencyChip.textContent = urgency.label;
-  top.append(code, urgencyChip);
-
-  const title = document.createElement("h3");
-  title.textContent = item.name || "Compra Ágil sin título informado";
-  const buyer = document.createElement("p");
-  buyer.className = "opportunity-buyer";
-  buyer.textContent = [item.buyer?.organization, item.buyer?.region].filter(Boolean).join(" · ") || "Comprador no informado";
-
-  const signals = document.createElement("div");
-  signals.className = "signal-row";
-  signals.append(
-    createSignal(item.call?.label || (item.call?.number ? `Llamado ${item.call.number}` : "Llamado no informado")),
-    createSignal(`${item.quoteCount ?? 0} cotizaciones`),
-    createSignal(`${item.documents?.length ?? 0} documentos`),
-  );
-
-  const footer = document.createElement("div");
-  footer.className = "opportunity-footer";
-  const budget = document.createElement("div");
-  budget.className = "opportunity-budget";
-  const budgetLabel = document.createElement("span");
-  budgetLabel.textContent = "Presupuesto disponible";
-  const budgetValue = document.createElement("strong");
-  budgetValue.textContent = formatMoney(item.budget?.amountClp ?? item.budget?.amount, item.budget?.currency);
-  budget.append(budgetLabel, budgetValue);
-  const button = document.createElement("button");
-  button.className = "view-button";
-  button.type = "button";
-  button.dataset.code = item.code;
-  button.textContent = "Evaluar →";
-  footer.append(budget, button);
-
-  article.append(top, title, buyer, signals, footer);
-  return article;
-}
-
-function renderRadar(page) {
-  elements.resultCount.textContent = `${page.pagination.totalResults} ${page.pagination.totalResults === 1 ? "oportunidad" : "oportunidades"}`;
-  elements.resultContext.textContent = "abiertas según la fuente oficial";
-  elements.pageIndicator.textContent = `Página ${page.pagination.page} de ${Math.max(page.pagination.totalPages, 1)}`;
-  elements.list.replaceChildren(...page.items.map(createOpportunity));
-  if (!page.items.length) {
-    const empty = document.createElement("div");
-    empty.className = "message";
-    empty.textContent = "No hay oportunidades abiertas que coincidan. Prueba con un término más amplio o con Todo Chile.";
-    elements.list.replaceChildren(empty);
-  }
-  radarState.page = page.pagination.page;
-  radarState.totalPages = page.pagination.totalPages;
-  elements.previousPage.disabled = radarState.page <= 1;
-  elements.nextPage.disabled = radarState.page >= radarState.totalPages;
-  elements.results.hidden = false;
-}
-
-async function loadRadar(page = 1) {
-  elements.radarButton.disabled = true;
-  elements.radarButton.textContent = "Buscando…";
-  setMessage("Consultando oportunidades abiertas en la fuente oficial…");
-  const params = new URLSearchParams({ pagina: String(page) });
-  const query = elements.query.value.trim();
-  if (query) params.set("q", query);
-  if (elements.region.value) params.set("region", elements.region.value);
-
-  try {
-    const payload = await requestJson(`/api/compra-agil?${params.toString()}`);
-    renderRadar(payload.data);
-    setMessage(`Radar actualizado: ${payload.data.pagination.totalResults} oportunidades encontradas.`);
-    setApiState("connected", "API conectada");
-  } catch (error) {
-    elements.results.hidden = true;
-    setMessage(error instanceof Error ? error.message : "No fue posible cargar el radar.", "error");
-  } finally {
-    elements.radarButton.disabled = false;
-    elements.radarButton.textContent = "Buscar ahora";
-  }
-}
-
-function createFact(label, value) {
-  const wrapper = document.createElement("div");
-  const term = document.createElement("dt");
-  const detail = document.createElement("dd");
-  term.textContent = label;
-  detail.textContent = textOr(value);
-  wrapper.append(term, detail);
+function fact(label, value) {
+  const wrapper = node('div');
+  wrapper.append(node('dt', label), node('dd', value ?? 'No informado'));
   return wrapper;
 }
 
-function createVerification(title, detail, pending = false) {
-  const item = document.createElement("div");
-  item.className = `verification ${pending ? "pending" : ""}`;
-  const dot = document.createElement("i");
-  const body = document.createElement("div");
-  const strong = document.createElement("strong");
-  const small = document.createElement("small");
-  strong.textContent = title;
-  small.textContent = detail;
-  body.append(strong, small);
-  item.append(dot, body);
+function verification(title, detail) {
+  const item = node('div', undefined, 'verification pending');
+  const body = node('div');
+  body.append(node('strong', title), node('small', detail));
+  item.append(node('i'), body);
   return item;
 }
 
-function renderProducts(products) {
-  elements.productCount.textContent = `${products.length} ${products.length === 1 ? "ítem" : "ítems"}`;
-  if (!products.length) {
-    const empty = document.createElement("p");
-    empty.textContent = "La fuente oficial no informó productos estructurados.";
-    elements.productList.replaceChildren(empty);
-    return;
-  }
-  elements.productList.replaceChildren(
-    ...products.map((product) => {
-      const article = document.createElement("article");
-      article.className = "product";
-      const top = document.createElement("div");
-      top.className = "product-top";
-      const name = document.createElement("strong");
-      name.textContent = product.name || "Producto o servicio sin nombre";
-      const quantity = document.createElement("span");
-      quantity.textContent = [product.quantity, product.unit].filter((value) => value !== null && value !== undefined).join(" ");
-      const description = document.createElement("p");
-      description.textContent = product.description || `Código de producto: ${product.code || "no informado"}`;
-      top.append(name, quantity);
-      article.append(top, description);
-      return article;
-    }),
+function renderTender(tender, meta) {
+  currentCode = tender.code;
+  byId('detail-status').textContent = tender.status || 'Estado no informado';
+  byId('detail-title').textContent = tender.name || 'Nombre no informado';
+  byId('detail-code').textContent = `Licitación ${tender.code}`;
+  byId('detail-description').textContent = tender.description || 'La fuente no informó una descripción.';
+  byId('detail-closing').textContent = formatOfficialDate(tender.dates.closing);
+  byId('source-label').textContent = `Fuente: Dirección ChileCompra · Consulta: ${new Intl.DateTimeFormat('es-CL', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Santiago' }).format(new Date(meta.retrievedAt))} (Santiago)`;
+  byId('detail-facts').replaceChildren(
+    fact('Organismo comprador', tender.buyer.organization),
+    fact('Unidad compradora', tender.buyer.unit),
+    fact('Región del comprador', tender.buyer.region),
+    fact('Comuna del comprador', tender.buyer.commune),
+    fact('Tipo informado', tender.type),
+    fact('Moneda informada', tender.currency),
+    fact('Apertura técnica', formatOfficialDate(tender.dates.technicalOpening)),
+    fact('Apertura económica', formatOfficialDate(tender.dates.economicOpening)),
+    fact('Adjudicación informada', formatOfficialDate(tender.dates.award)),
+    fact('Días de cierre según API', tender.dates.daysRemaining),
   );
-}
-
-function renderDetail(item) {
-  const urgency = urgencyInfo(item.dates?.hoursRemaining);
-  elements.detailStatus.textContent = item.status?.label || item.status?.code || "Estado no informado";
-  elements.detailTitle.textContent = item.name || "Compra Ágil sin título informado";
-  elements.detailCode.textContent = `Código ${item.code}`;
-  elements.detailDescription.textContent = item.description || "La fuente oficial no informó una descripción adicional.";
-  elements.detailUrgency.replaceChildren();
-  const urgencyLabel = document.createElement("span");
-  urgencyLabel.textContent = "URGENCIA CALCULADA";
-  const urgencyValue = document.createElement("strong");
-  urgencyValue.textContent = urgency.label;
-  const urgencySource = document.createElement("small");
-  urgencySource.textContent = `Cierre oficial: ${formatDate(item.dates?.closing)}`;
-  elements.detailUrgency.append(urgencyLabel, urgencyValue, urgencySource);
-
-  elements.detailFacts.replaceChildren(
-    createFact("Organismo", item.buyer?.organization),
-    createFact("Unidad compradora", item.buyer?.unit),
-    createFact("Región", item.buyer?.region),
-    createFact("Presupuesto", formatMoney(item.budget?.amountClp ?? item.budget?.amount, item.budget?.currency)),
-    createFact("Convocatoria", item.call?.label),
-    createFact("Cotizaciones recibidas", item.quoteCount ?? 0),
-    createFact("Entrega", item.delivery?.address),
-    createFact("Plazo de entrega", item.delivery?.days !== null && item.delivery?.days !== undefined ? `${item.delivery.days} días` : null),
-  );
-
   const checks = [
-    createVerification("Proceso publicado", "Dato oficial: la oportunidad aparece abierta para recibir cotizaciones."),
-    createVerification(
-      item.call?.number === 1 ? "Confirma condición EMT" : "Revisa quién puede participar",
-      item.call?.number === 1 ? "El primer llamado está dirigido a Empresas de Menor Tamaño y proveedores locales." : "Verifica las condiciones del llamado vigente en Mercado Público.",
-      true,
-    ),
-    createVerification("Confirma Registro de Proveedores hábil", "La aplicación todavía no conoce el estado legal o tributario de tu empresa.", true),
+    verification('Confirma estado y plazo', 'La ficha puede corresponder a un proceso cerrado, adjudicado o modificado. Revisa su estado vigente en Mercado Público.'),
+    verification('Lee bases y anexos', 'No se han analizado documentos ni confirmado requisitos de admisibilidad.'),
+    verification('Comprueba entrega y capacidad', 'La ubicación del comprador no equivale al lugar de entrega. Contrasta cantidades, plazos y especificaciones.'),
+    verification('Revisa tu habilitación', 'La aplicación no conoce los antecedentes, registro ni capacidad de tu empresa.'),
   ];
-  if (item.flags?.environmentalRequirements) {
-    checks.push(createVerification("Incluye requisito medioambiental", "Dato oficial informado por el proceso; revisa su respaldo antes de cotizar."));
-  }
-  if (item.flags?.socialEconomicRequirements) {
-    checks.push(createVerification("Incluye requisito de impacto social o económico", "Dato oficial informado por el proceso."));
-  }
-  if (item.documents?.length) {
-    checks.push(createVerification(`${item.documents.length} documentos informados`, "Revísalos en Mercado Público antes de enviar la cotización.", true));
-  }
-  elements.verificationList.replaceChildren(...checks);
-  renderProducts(item.products || []);
-  elements.detail.hidden = false;
-  elements.detail.scrollIntoView({ behavior: "smooth", block: "start" });
+  const missing = [!tender.name && 'nombre', !tender.description && 'descripción', !tender.dates.closing && 'cierre', !tender.buyer.organization && 'organismo', !tender.items.length && 'productos estructurados'].filter(Boolean);
+  if (missing.length) checks.unshift(verification('Datos ausentes en esta respuesta', `Falta verificar: ${missing.join(', ')}. No se completaron con supuestos.`));
+  byId('verification-list').replaceChildren(...checks);
+  byId('product-count').textContent = `${tender.items.length} ítems · conteo calculado`;
+  byId('product-list').replaceChildren(...tender.items.map((product) => {
+    const article = node('article', undefined, 'product');
+    const top = node('div', undefined, 'product-top');
+    top.append(node('strong', product.name || 'Producto sin nombre informado'), node('span', `${product.quantity ?? 'Cantidad no informada'} ${product.unit ?? ''}`.trim()));
+    article.append(top, node('p', product.description || 'Descripción no informada'), node('p', `Código: ${product.code ?? 'No informado'} · Categoría: ${product.category ?? 'No informada'}`));
+    return article;
+  }));
+  if (!tender.items.length) byId('product-list').append(node('p', 'Sin productos estructurados en esta respuesta. Revisa las bases.'));
+  byId('detalle').hidden = false;
+  byId('detail-title').focus();
 }
 
-async function loadDetail(code) {
-  setMessage(`Cargando evidencia oficial de ${code}…`);
+byId('tender-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  activeRequest?.abort();
+  const controller = new AbortController();
+  activeRequest = controller;
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  byId('detalle').hidden = true;
+  currentCode = '';
+  byId('query-button').disabled = true;
+  byId('query-button').textContent = 'Consultando…';
+  byId('consulta').setAttribute('aria-busy', 'true');
   try {
-    const payload = await requestJson(`/api/compra-agil/${encodeURIComponent(code)}`);
-    renderDetail(payload.data);
-    setMessage(`Compra Ágil ${payload.data.code} lista para evaluación.`);
+    const code = validateTenderCode(byId('tender-code').value);
+    byId('tender-code').value = code;
+    setMessage('Consultando la fuente oficial…');
+    setApiState('neutral', 'Consulta en curso');
+    const payload = await requestJson(apiUrl, `/api/licitacion/${encodeURIComponent(code)}`, controller.signal);
+    if (activeRequest !== controller) return;
+    if (payload.data?.code !== code || !payload.data.buyer || !payload.data.dates || !Array.isArray(payload.data.items) || !Number.isFinite(Date.parse(payload.meta?.retrievedAt))) throw new Error('La API devolvió una ficha incompleta o incompatible. Vuelve a intentar.');
+    renderTender(payload.data, payload.meta);
+    setApiState('connected', 'Consulta oficial verificada');
+    setMessage(`Información oficial recibida para ${code}. Consulta el estado antes de preparar una oferta.`);
   } catch (error) {
-    setMessage(error instanceof Error ? error.message : "No fue posible cargar el detalle.", "error");
+    if (activeRequest !== controller) return;
+    setApiState('neutral', 'Consulta no completada');
+    setMessage(controller.signal.aborted ? 'La consulta tardó demasiado. Intenta nuevamente.' : error instanceof Error ? error.message : 'No fue posible consultar la licitación.', true);
+  } finally {
+    clearTimeout(timeout);
+    if (activeRequest === controller) {
+      byId('query-button').disabled = false;
+      byId('query-button').textContent = 'Consultar ahora';
+      byId('consulta').removeAttribute('aria-busy');
+    }
   }
-}
+});
 
-elements.form.addEventListener("submit", (event) => {
+byId('close-detail').addEventListener('click', () => { byId('detalle').hidden = true; byId('tender-code').focus(); });
+byId('copy-code').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(currentCode); setMessage('Código copiado. Búscalo en Mercado Público.'); }
+  catch { setMessage('No se pudo copiar. Selecciona el código visible en la ficha.', true); }
+});
+byId('open-settings').addEventListener('click', () => { byId('api-url').value = apiUrl; byId('settings-status').textContent = ''; byId('settings-dialog').showModal(); });
+byId('settings-form').addEventListener('submit', (event) => {
+  if (event.submitter?.value !== 'save') return;
   event.preventDefault();
-  void loadRadar(1);
+  try {
+    const next = validateApiUrl(byId('api-url').value);
+    activeRequest?.abort();
+    activeRequest = undefined;
+    byId('query-button').disabled = false;
+    byId('query-button').textContent = 'Consultar ahora';
+    byId('consulta').removeAttribute('aria-busy');
+    apiUrl = next;
+    try { localStorage.setItem(API_STORAGE_KEY, next); } catch { /* Still usable for this page session. */ }
+    byId('detalle').hidden = true;
+    byId('settings-dialog').close();
+    setMessage('Conexión guardada. Consulta un código para verificar el acceso a datos.');
+    setApiState('neutral', 'Servidor sin verificar');
+  } catch (error) { byId('settings-status').textContent = error.message; }
 });
-
-elements.list.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-code]");
-  if (button?.dataset.code) void loadDetail(button.dataset.code);
+byId('test-api').addEventListener('click', async () => {
+  byId('test-api').disabled = true;
+  byId('settings-status').textContent = 'Verificando servidor…';
+  try { byId('settings-status').textContent = await testServer(validateApiUrl(byId('api-url').value)); }
+  catch (error) { byId('settings-status').textContent = error instanceof Error ? error.message : 'No fue posible conectar.'; }
+  finally { byId('test-api').disabled = false; }
 });
-
-elements.previousPage.addEventListener("click", () => void loadRadar(Math.max(1, radarState.page - 1)));
-elements.nextPage.addEventListener("click", () => void loadRadar(Math.min(radarState.totalPages, radarState.page + 1)));
-elements.closeDetail.addEventListener("click", () => {
-  elements.detail.hidden = true;
-  document.querySelector("#radar").scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-elements.openSettings.addEventListener("click", () => {
-  elements.apiUrl.value = getApiUrl();
-  elements.dialog.showModal();
-});
-
-elements.settingsForm.addEventListener("submit", (event) => {
-  if (event.submitter?.value !== "save") return;
-  event.preventDefault();
-  localStorage.setItem(API_STORAGE_KEY, elements.apiUrl.value.trim().replace(/\/$/, ""));
-  elements.dialog.close();
-  void testConnection().then((connected) => connected && loadRadar(1));
-});
-
-elements.testApi.addEventListener("click", async () => {
-  localStorage.setItem(API_STORAGE_KEY, elements.apiUrl.value.trim().replace(/\/$/, ""));
-  await testConnection();
-});
-
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  window.addEventListener("load", () => void navigator.serviceWorker.register("./sw.js"));
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => { void navigator.serviceWorker.register('./sw.js').catch(() => { /* Online use remains available. */ }); });
 }
-
-void testConnection().then((connected) => connected && loadRadar(1));
+// Health is not upstream authentication or a live data result.
+const initialApiUrl = apiUrl;
+void testServer(initialApiUrl).then(() => {
+  if (!activeRequest && apiUrl === initialApiUrl) setApiState('neutral', 'Servidor disponible · consulta pendiente');
+}).catch(() => { if (!activeRequest && apiUrl === initialApiUrl) setApiState('disconnected', 'Servidor no verificado · intenta consultar'); });

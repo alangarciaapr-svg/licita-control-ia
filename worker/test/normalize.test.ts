@@ -48,5 +48,17 @@ describe("normalizeTenderResponse", () => {
     expect(normalizeTenderResponse({ Listado: [] }, "NO-EXISTE")).toBeNull();
     expect(normalizeTenderResponse(null, "NO-EXISTE")).toBeNull();
   });
-});
 
+  it("no atribuye al código solicitado una ficha vacía o de otro proceso", () => {
+    expect(normalizeTenderResponse({ Listado: [{}] }, "123-45-LE26")).toBeNull();
+    expect(normalizeTenderResponse({ Listado: [{ CodigoExterno: "999-99-LE26" }] }, "123-45-LE26")).toBeNull();
+  });
+
+  it("conserva ausencias y no inventa productos o cantidades", () => {
+    const result = normalizeTenderResponse({ Listado: [{ CodigoExterno: "123-45-LE26", Items: { Listado: [{}, null, { NombreProducto: "Prueba sintética", Cantidad: "" }] } }] }, "123-45-LE26");
+    expect(result?.buyer.organization).toBeNull();
+    expect(result?.dates.closing).toBeNull();
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0].quantity).toBeNull();
+  });
+});

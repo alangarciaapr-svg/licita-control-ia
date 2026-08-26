@@ -1,5 +1,5 @@
-const CACHE_NAME = "licita-control-v3";
-const APP_SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./og.png"];
+const CACHE_NAME = "licita-control-v4";
+const APP_SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./view-utils.js", "./manifest.webmanifest", "./og.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -9,22 +9,26 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
+      Promise.all(keys.filter((key) => key.startsWith("licita-control-") && key !== CACHE_NAME).map((key) => caches.delete(key))),
     ),
   );
   self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET" || new URL(event.request.url).pathname.startsWith("/api/")) return;
+  const url = new URL(event.request.url);
+  // Only cache the app shell, never health/API responses or third-party requests.
+  if (event.request.method !== "GET" || url.origin !== self.location.origin || url.search || !APP_SHELL.some((path) => new URL(path, self.registration.scope).href === url.href)) return;
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const copy = response.clone();
-        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)));
+        if (response.ok) {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)));
+        }
         return response;
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))),
+      .catch(async () => (await caches.match(event.request)) || new Response("Recurso no disponible sin conexión.", { status: 503 })),
   );
 });

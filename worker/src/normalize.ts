@@ -44,7 +44,7 @@ function recordAt(record: UnknownRecord, key: string): UnknownRecord {
 function stringAt(record: UnknownRecord, key: string): string | null {
   const value = record[key];
   if (typeof value === "string") return value.trim() || null;
-  if (typeof value === "number") return String(value);
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return null;
 }
 
@@ -65,15 +65,17 @@ function arrayAt(record: UnknownRecord, key: string): unknown[] {
 
 function normalizeItem(value: unknown): NormalizedItem | null {
   if (!isRecord(value)) return null;
-  const rawQuantity = value.Cantidad;
-  const quantity =
-    typeof rawQuantity === "number" || typeof rawQuantity === "string" ? rawQuantity : null;
+  const quantity = numberAt(value, "Cantidad");
+  const name = stringAt(value, "NombreProducto");
+  const code = stringAt(value, "CodigoProducto");
+  const description = stringAt(value, "Descripcion");
+  if (!name && !code && !description) return null;
 
   return {
     category: stringAt(value, "Categoria"),
-    code: stringAt(value, "CodigoProducto"),
-    description: stringAt(value, "Descripcion"),
-    name: stringAt(value, "NombreProducto"),
+    code,
+    description,
+    name,
     quantity,
     unit: stringAt(value, "UnidadMedida"),
   };
@@ -82,7 +84,7 @@ function normalizeItem(value: unknown): NormalizedItem | null {
 export function normalizeTenderResponse(payload: unknown, requestedCode: string): NormalizedTender | null {
   if (!isRecord(payload)) return null;
   const listing = arrayAt(payload, "Listado");
-  const first = listing.find(isRecord);
+  const first = listing.find((entry): entry is UnknownRecord => isRecord(entry) && stringAt(entry, "CodigoExterno")?.toUpperCase() === requestedCode.toUpperCase());
   if (!first) return null;
 
   const buyer = recordAt(first, "Comprador");
@@ -96,7 +98,7 @@ export function normalizeTenderResponse(payload: unknown, requestedCode: string)
       region: stringAt(buyer, "RegionUnidad"),
       unit: stringAt(buyer, "NombreUnidad"),
     },
-    code: stringAt(first, "CodigoExterno") || requestedCode,
+    code: String(first.CodigoExterno).trim().toUpperCase(),
     currency: stringAt(first, "Moneda"),
     dates: {
       award: stringAt(dates, "FechaAdjudicacion"),
@@ -112,4 +114,3 @@ export function normalizeTenderResponse(payload: unknown, requestedCode: string)
     type: stringAt(first, "Tipo"),
   };
 }
-

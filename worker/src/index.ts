@@ -1,12 +1,13 @@
 import { normalizeTenderResponse } from "./normalize";
+import { readBoundedJson, UpstreamBodyError } from "./upstream";
 import {
   normalizeCompraAgilDetailResponse,
   normalizeCompraAgilListResponse,
 } from "./normalizeCompraAgil";
 
 const SERVICE_NAME = "LicitaControl IA API";
-const VERSION = "0.2.0";
-const TENDER_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{2,39}$/;
+const VERSION = "0.3.0";
+const TENDER_CODE_PATTERN = /^\d{1,12}-\d{1,12}-[A-Z][A-Z0-9]{0,3}\d{2}$/;
 const COMPRA_AGIL_CODE_PATTERN = /^\d+-\d+-COT\d{2}$/;
 
 interface ApiError {
@@ -74,13 +75,13 @@ async function fetchCompraAgilUpstream(
   try {
     upstream = await fetch(upstreamUrl, {
       headers: { Accept: "application/json", ticket: env.MERCADO_PUBLICO_TICKET },
+      redirect: "manual",
       signal: AbortSignal.timeout(15_000),
     });
-  } catch (error) {
+  } catch {
     console.error(
       JSON.stringify({
         event: "compra_agil_request_failed",
-        message: error instanceof Error ? error.message : "Unknown upstream error",
         requestId,
       }),
     );
@@ -98,7 +99,7 @@ async function fetchCompraAgilUpstream(
           requestId,
           503,
           "COMPRA_AGIL_NOT_AUTHORIZED",
-          "La integración necesita un ticket habilitado para Compra Ágil v2.",
+          "La fuente oficial rechazó el acceso a Compra Ágil v2. La causa debe verificarse; no implica necesariamente solicitar otro ticket.",
         ),
       };
     }
@@ -111,14 +112,12 @@ async function fetchCompraAgilUpstream(
     return { response: errorResponse(request, requestId, 502, "UPSTREAM_ERROR", "La fuente oficial rechazó la consulta.") };
   }
 
-  const contentLength = Number(upstream.headers.get("Content-Length") || "0");
-  if (contentLength > 5_000_000) {
-    return { response: errorResponse(request, requestId, 502, "UPSTREAM_RESPONSE_TOO_LARGE", "La respuesta recibida es demasiado grande.") };
-  }
-
   try {
-    return { payload: await upstream.json() };
-  } catch {
+    return { payload: await readBoundedJson(upstream) };
+  } catch (error) {
+    if (error instanceof UpstreamBodyError && error.code === "UPSTREAM_RESPONSE_TOO_LARGE") {
+      return { response: errorResponse(request, requestId, 502, error.code, "La respuesta recibida es demasiado grande.") };
+    }
     return { response: errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "La fuente oficial devolvió una respuesta inválida.") };
   }
 }
@@ -189,6 +188,9 @@ async function fetchCompraAgilDetail(
 }
 
 async function fetchTender(request: Request, env: Env, requestId: string, code: string): Promise<Response> {
+  if (COMPRA_AGIL_CODE_PATTERN.test(code)) {
+    return errorResponse(request, requestId, 400, "WRONG_PURCHASE_TYPE", "Ese código corresponde a Compra Ágil. Este módulo consulta licitaciones; la conexión Compra Ágil v2 está pendiente de validación.");
+  }
   if (!TENDER_CODE_PATTERN.test(code)) {
     return errorResponse(request, requestId, 400, "INVALID_TENDER_CODE", "El código de licitación no es válido.");
   }
@@ -206,13 +208,13 @@ async function fetchTender(request: Request, env: Env, requestId: string, code: 
   try {
     upstream = await fetch(upstreamUrl, {
       headers: { Accept: "application/json" },
+      redirect: "manual",
       signal: AbortSignal.timeout(15_000),
     });
-  } catch (error) {
+  } catch {
     console.error(
       JSON.stringify({
         event: "mercado_publico_request_failed",
-        message: error instanceof Error ? error.message : "Unknown upstream error",
         requestId,
       }),
     );
@@ -223,28 +225,40 @@ async function fetchTender(request: Request, env: Env, requestId: string, code: 
     console.error(
       JSON.stringify({ event: "mercado_publico_bad_status", requestId, status: upstream.status }),
     );
+    if (upstream.status === 401 || upstream.status === 403) {
+      return errorResponse(request, requestId, 503, "UPSTREAM_ACCESS_DENIED", "La fuente oficial rechazó el acceso. Debe revisarse la integración; no se pudo consultar la licitación.");
+    }
+    if (upstream.status === 429) {
+      return errorResponse(request, requestId, 429, "UPSTREAM_RATE_LIMIT", "Mercado Público alcanzó temporalmente su límite de consultas. Intenta más tarde.");
+    }
     return errorResponse(request, requestId, 502, "UPSTREAM_ERROR", "Mercado Público rechazó la consulta.");
-  }
-
-  const contentLength = Number(upstream.headers.get("Content-Length") || "0");
-  if (contentLength > 5_000_000) {
-    return errorResponse(request, requestId, 502, "UPSTREAM_RESPONSE_TOO_LARGE", "La respuesta recibida es demasiado grande.");
   }
 
   let payload: unknown;
   try {
-    payload = await upstream.json();
-  } catch {
+    payload = await readBoundedJson(upstream);
+  } catch (error) {
+    if (error instanceof UpstreamBodyError && error.code === "UPSTREAM_RESPONSE_TOO_LARGE") {
+      return errorResponse(request, requestId, 502, error.code, "La respuesta recibida es demasiado grande.");
+    }
     return errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "Mercado Público devolvió una respuesta inválida.");
+  }
+
+  // Legacy API application errors may arrive with HTTP 200. Never expose their body.
+  if (typeof payload !== "object" || payload === null || !("Listado" in payload) || !Array.isArray(payload.Listado) || "Codigo" in payload || "Mensaje" in payload) {
+    return errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "La fuente oficial no devolvió un listado válido. No es posible confirmar si la licitación existe.");
+  }
+  if (payload.Listado.length === 0) {
+    return errorResponse(request, requestId, 404, "TENDER_NOT_FOUND", "La fuente oficial no devolvió resultados para ese código. Verifica el código en Mercado Público.");
   }
 
   const tender = normalizeTenderResponse(payload, code);
   if (!tender) {
-    return errorResponse(request, requestId, 404, "TENDER_NOT_FOUND", "No se encontró una licitación con ese código.");
+    return errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "La respuesta oficial no coincide con la licitación solicitada.");
   }
 
   console.log(JSON.stringify({ event: "tender_loaded", requestId, tenderCode: tender.code }));
-  return jsonResponse(request, { data: tender, meta: { requestId, source: "Mercado Público" } });
+  return jsonResponse(request, { data: tender, meta: { requestId, source: "Dirección ChileCompra · API Mercado Público v1", retrievedAt: new Date().toISOString() } });
 }
 
 export default {
@@ -272,7 +286,9 @@ export default {
 
       const match = url.pathname.match(/^\/api\/licitacion\/([^/]+)$/);
       if (match) {
-        const code = decodeURIComponent(match[1]).trim().toUpperCase();
+        let code: string;
+        try { code = decodeURIComponent(match[1]).trim().toUpperCase(); }
+        catch { return errorResponse(request, requestId, 400, "INVALID_TENDER_CODE", "El código de licitación no es válido."); }
         return await fetchTender(request, env, requestId, code);
       }
 
@@ -282,17 +298,17 @@ export default {
 
       const compraAgilMatch = url.pathname.match(/^\/api\/compra-agil\/([^/]+)$/);
       if (compraAgilMatch) {
-        const code = decodeURIComponent(compraAgilMatch[1]).trim().toUpperCase();
+        let code: string;
+        try { code = decodeURIComponent(compraAgilMatch[1]).trim().toUpperCase(); }
+        catch { return errorResponse(request, requestId, 400, "INVALID_COMPRA_AGIL_CODE", "El código de Compra Ágil no es válido."); }
         return await fetchCompraAgilDetail(request, env, requestId, code);
       }
 
       return errorResponse(request, requestId, 404, "ROUTE_NOT_FOUND", "Ruta no encontrada.");
-    } catch (error) {
+    } catch {
       console.error(
         JSON.stringify({
           event: "unhandled_request_error",
-          message: error instanceof Error ? error.message : "Unknown error",
-          path: url.pathname,
           requestId,
         }),
       );

@@ -1,9 +1,9 @@
 {
-  "name": "LicitaControl IA · Compra Ágil",
-  "short_name": "Compra Ágil",
+  "name": "LicitaControl IA · Consulta oficial",
+  "short_name": "LicitaControl",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#07120f",
   "theme_color": "#0b1c17",
-  "description": "Radar operativo para encontrar y evaluar oportunidades de Compra Ágil"
+  "description": "Consulta licitaciones por código con evidencia oficial de Mercado Público"
 }

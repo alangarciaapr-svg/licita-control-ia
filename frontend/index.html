@@ -4,132 +4,103 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#071712" />
-    <meta name="description" content="Radar operativo de Compra Ágil: oportunidades oficiales, urgencia y evidencia para decidir qué cotizar." />
+    <meta name="description" content="Consulta licitaciones por código con datos oficiales de Mercado Público. Revisa qué se compra, fechas y antecedentes pendientes." />
     <meta property="og:title" content="LicitaControl IA" />
-    <meta property="og:description" content="Compra Ágil, sin ruido. Decide qué cotizar con evidencia oficial." />
+    <meta property="og:description" content="Consulta oficial de licitaciones por código. Evidencia para decidir qué revisar." />
     <meta property="og:image" content="https://licita-control-ia.pages.dev/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LicitaControl IA" />
-    <meta name="twitter:description" content="Compra Ágil, sin ruido. Decide qué cotizar con evidencia oficial." />
+    <meta name="twitter:description" content="Consulta oficial de licitaciones por código. Evidencia para decidir qué revisar." />
     <meta name="twitter:image" content="https://licita-control-ia.pages.dev/og.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>LicitaControl IA · Compra Ágil</title>
+    <title>LicitaControl IA · Consulta oficial</title>
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <a class="brand" href="#inicio" aria-label="LicitaControl IA, inicio">
-          <span class="brand-mark">LC</span>
-          <span><strong>LicitaControl</strong><small>COMPRA ÁGIL OS</small></span>
+          <span class="brand-mark">LC</span><span><strong>LicitaControl</strong><small>DECISIONES CON EVIDENCIA</small></span>
         </a>
         <nav class="nav" aria-label="Navegación principal">
           <a class="active" href="#inicio"><span>01</span> Inicio</a>
-          <a href="#radar"><span>02</span> Radar en vivo</a>
-          <a href="#metodo"><span>03</span> Método</a>
+          <a href="#consulta"><span>02</span> Consultar código</a>
+          <a href="#metodo"><span>03</span> Qué verificar</a>
         </nav>
-        <div class="sidebar-note"><span class="status-dot"></span><div><strong>API oficial v2</strong><small>Compra Ágil beta</small></div></div>
+        <div class="sidebar-note"><div><strong>Mercado Público · v1</strong><small>Consulta individual</small></div></div>
       </aside>
-
       <main>
         <header class="topbar">
-          <div><span class="eyebrow">RADAR OPERATIVO PARA PROVEEDORES</span><h1>Compra Ágil, sin ruido.</h1></div>
+          <div><span class="eyebrow">ESPACIO DE REVISIÓN PARA PROVEEDORES</span><h1>Decide con evidencia.</h1></div>
           <button id="open-settings" class="ghost-button" type="button">Conexión API</button>
         </header>
-
         <section id="inicio" class="hero-panel">
           <div class="hero-copy">
-            <span class="pill">MERCADO PÚBLICO · DATOS EN TIEMPO REAL</span>
-            <h2>Encuentra hoy.<br />Cotiza a tiempo.</h2>
-            <p>Un radar especializado que ordena oportunidades abiertas por urgencia y muestra qué se compra, cuánto hay disponible, dónde se entrega y qué debes verificar antes de cotizar.</p>
-            <a class="primary-button hero-action" href="#radar">Ver oportunidades abiertas</a>
+            <span class="pill">CONSULTA OFICIAL · SIN DATOS SIMULADOS</span>
+            <h2>Un código.<br />Lo que necesitas revisar.</h2>
+            <p>Consulta una licitación de Mercado Público y reúne su descripción, comprador, fechas y productos. Identifica qué está informado y qué falta comprobar antes de preparar una oferta.</p>
+            <a class="primary-button hero-action" href="#consulta">Consultar una licitación</a>
           </div>
-          <div class="decision-dial" aria-label="Flujo de decisión">
-            <span>DECISIÓN OPERATIVA</span><strong>COTIZAR</strong><small>REVISAR · DESCARTAR</small><div class="dial-ring"></div>
+          <div class="decision-dial" aria-label="Apoyo a la revisión, no recomendación automática">
+            <span>TU SIGUIENTE PASO</span><strong>REVISAR</strong><small>HECHOS · FECHAS · REQUISITOS</small><div class="dial-ring"></div>
           </div>
         </section>
-
-        <section class="metrics" aria-label="Reglas de Compra Ágil">
-          <article><span>Modalidad</span><strong>Hasta 100 UTM</strong><small>Dato normativo</small></article>
-          <article><span>Primer llamado</span><strong>Prioridad EMT</strong><small>Proveedor hábil</small></article>
-          <article><span>Selección</span><strong>3 cotizaciones</strong><small>Solicitadas por comprador</small></article>
-          <article><span>Postulación</span><strong>Mercado Público</strong><small>Canal oficial</small></article>
+        <section class="metrics" aria-label="Alcance de esta versión">
+          <article><span>Fuente</span><strong>ChileCompra</strong><small>Datos oficiales consultados</small></article>
+          <article><span>Consulta</span><strong>Por código</strong><small>Licitaciones, no cotizaciones COT</small></article>
+          <article><span>Análisis</span><strong>Sin puntajes de IA</strong><small>Sin probabilidades inventadas</small></article>
+          <article><span>Presentación</span><strong>Mercado Público</strong><small>Canal oficial de ofertas</small></article>
         </section>
-
-        <section id="radar" class="workspace-card">
+        <section id="consulta" class="workspace-card">
           <div class="section-heading">
-            <div><span class="eyebrow">OPORTUNIDADES ABIERTAS</span><h2>Radar Compra Ágil</h2></div>
-            <span id="api-badge" class="connection-badge neutral">API sin verificar</span>
+            <div><span class="eyebrow">PRIMERO, LA INFORMACIÓN REAL</span><h2>Consulta una licitación</h2></div>
+            <span id="api-badge" class="connection-badge neutral" role="status">Servidor sin verificar</span>
           </div>
-          <form id="radar-form" class="radar-form">
+          <form id="tender-form" class="radar-form tender-form">
             <div class="field-group grow">
-              <label for="search-query">¿Qué vende tu empresa?</label>
-              <input id="search-query" name="q" type="search" placeholder="Ej. computadores, capacitación, mobiliario" autocomplete="off" maxlength="120" />
+              <label for="tender-code">Código de licitación de Mercado Público</label>
+              <input id="tender-code" name="codigo" type="text" placeholder="Pega aquí el código oficial" autocomplete="off" spellcheck="false" maxlength="40" required aria-describedby="code-help" />
             </div>
-            <div class="field-group">
-              <label for="region-filter">Región del comprador</label>
-              <select id="region-filter" name="region">
-                <option value="">Todo Chile</option><option value="15">Arica y Parinacota</option><option value="1">Tarapacá</option>
-                <option value="2">Antofagasta</option><option value="3">Atacama</option><option value="4">Coquimbo</option>
-                <option value="5">Valparaíso</option><option value="13">Metropolitana</option><option value="6">O'Higgins</option>
-                <option value="7">Maule</option><option value="16">Ñuble</option><option value="8">Biobío</option>
-                <option value="9">Araucanía</option><option value="14">Los Ríos</option><option value="10">Los Lagos</option>
-                <option value="11">Aysén</option><option value="12">Magallanes</option>
-              </select>
-            </div>
-            <button id="radar-button" class="primary-button" type="submit">Buscar ahora</button>
+            <button id="query-button" class="primary-button" type="submit">Consultar ahora</button>
           </form>
-          <div class="evidence-legend" aria-label="Tipos de evidencia">
-            <span><i class="source-dot official"></i>Dato oficial</span><span><i class="source-dot calculated"></i>Cálculo determinista</span><span><i class="source-dot pending"></i>Debes verificar</span>
-          </div>
+          <p id="code-help" class="method-note">Copia el código desde Mercado Público. Los códigos terminados en COT corresponden a Compra Ágil y no se consultan en este módulo.</p>
+          <div class="evidence-legend"><span><i class="source-dot official"></i>Dato oficial</span><span><i class="source-dot calculated"></i>Conteo calculado</span><span><i class="source-dot pending"></i>Pendiente de verificar</span></div>
           <div id="message" class="message" role="status" aria-live="polite" hidden></div>
-          <div id="radar-results" class="radar-results" hidden>
-            <div class="results-summary">
-              <div><strong id="result-count">0 oportunidades</strong><span id="result-context">abiertas ahora</span></div>
-              <span id="page-indicator" class="count-chip"></span>
-            </div>
-            <div id="opportunity-list" class="opportunity-list"></div>
-            <div class="pagination"><button id="previous-page" class="ghost-button" type="button">← Anterior</button><button id="next-page" class="ghost-button" type="button">Siguiente →</button></div>
-          </div>
+          <noscript><p class="message error">Activa JavaScript para consultar los datos oficiales.</p></noscript>
         </section>
-
-        <section id="detalle" class="detail-panel" hidden>
-          <div class="detail-topline"><button id="close-detail" class="back-button" type="button">← Volver al radar</button><span class="source-label">Fuente: Dirección ChileCompra</span></div>
+        <section id="detalle" class="detail-panel" hidden aria-labelledby="detail-title">
+          <div class="detail-topline"><button id="close-detail" class="back-button" type="button">← Consultar otro código</button><span id="source-label" class="source-label"></span></div>
           <div class="detail-header">
-            <div><span id="detail-status" class="pill"></span><h2 id="detail-title"></h2><p id="detail-code"></p></div>
-            <div id="detail-urgency" class="urgency-box"></div>
+            <div><span id="detail-status" class="pill"></span><h2 id="detail-title" tabindex="-1"></h2><p id="detail-code"></p></div>
+            <div class="urgency-box"><span>CIERRE INFORMADO</span><strong id="detail-closing"></strong><small>Fecha de la fuente, sin estimar una zona horaria.</small></div>
           </div>
           <p id="detail-description" class="detail-description"></p>
           <dl id="detail-facts" class="facts"></dl>
           <div class="detail-grid">
-            <article class="decision-card"><span class="eyebrow">CONTROL ANTES DE COTIZAR</span><h3>Semáforo de verificación</h3><div id="verification-list" class="verification-list"></div></article>
-            <article class="products-card">
-              <div class="section-heading compact"><div><span class="eyebrow">SOLICITUD OFICIAL</span><h3>Productos y servicios</h3></div><span id="product-count" class="count-chip"></span></div>
-              <div id="product-list" class="product-list"></div>
-            </article>
+            <article class="decision-card"><span class="eyebrow">NO ES UN DICTAMEN DE ADMISIBILIDAD</span><h3>Qué falta verificar</h3><div id="verification-list" class="verification-list"></div></article>
+            <article class="products-card"><div class="section-heading compact"><div><span class="eyebrow">PRODUCTOS Y SERVICIOS OFICIALES</span><h3>Qué se compra</h3></div><span id="product-count" class="count-chip"></span></div><div id="product-list" class="product-list"></div></article>
           </div>
-          <div class="official-action"><div><strong>La cotización se envía únicamente en Mercado Público.</strong><span>Copia el código y continúa en el canal oficial.</span></div><a class="primary-button" href="https://www.mercadopublico.cl/" target="_blank" rel="noopener noreferrer">Ir a Mercado Público ↗</a></div>
+          <div class="official-action"><div><strong>Revisa las bases y presenta tu oferta en Mercado Público.</strong><span>Esta ficha no reemplaza los documentos ni confirma que puedes participar.</span></div><button id="copy-code" class="ghost-button" type="button">Copiar código</button><a class="primary-button" href="https://www.mercadopublico.cl/" target="_blank" rel="noopener noreferrer">Ir al portal oficial ↗</a></div>
         </section>
-
         <section id="metodo" class="method-section">
-          <div class="section-heading"><div><span class="eyebrow">UNA DECISIÓN, TRES CAPAS</span><h2>Qué hace diferente al radar</h2></div></div>
+          <div class="section-heading"><div><span class="eyebrow">UN FLUJO CLARO</span><h2>De la consulta a la revisión</h2></div></div>
           <div class="method-grid">
-            <article><span>01</span><strong>Descubre</strong><p>Filtra Compra Ágil abierta por producto y región directamente desde la API oficial.</p></article>
-            <article><span>02</span><strong>Ordena</strong><p>Convierte fechas en urgencia visible y separa hechos, cálculos y verificaciones pendientes.</p></article>
-            <article><span>03</span><strong>Decide</strong><p>Entrega un checklist operativo antes de invertir tiempo en la cotización oficial.</p></article>
+            <article><span>01</span><strong>Consulta</strong><p>Introduce el código. La aplicación consulta la API oficial y no inventa campos ausentes.</p></article>
+            <article><span>02</span><strong>Contrasta</strong><p>Revisa comprador, fechas y productos. Una región del comprador no confirma el lugar de entrega.</p></article>
+            <article><span>03</span><strong>Verifica</strong><p>Comprueba bases, anexos, capacidad de entrega y requisitos de tu empresa en el portal oficial.</p></article>
           </div>
-          <p class="method-note">LicitaControl IA no postula por ti ni reemplaza Mercado Público. Reduce el tiempo perdido antes de decidir.</p>
+          <p class="message">Compra Ágil: la conexión v2 sigue pendiente de validación. Esta versión no muestra sus oportunidades abiertas ni presenta órdenes históricas como nuevas oportunidades.</p>
         </section>
       </main>
     </div>
-
     <dialog id="settings-dialog">
       <form id="settings-form" method="dialog">
-        <div class="dialog-heading"><div><span class="eyebrow">CONFIGURACIÓN LOCAL</span><h2>Conexión API</h2></div><button class="icon-button" value="cancel" aria-label="Cerrar">×</button></div>
+        <div class="dialog-heading"><div><span class="eyebrow">CONFIGURACIÓN LOCAL</span><h2>Conexión API</h2></div><button class="icon-button" value="cancel" formnovalidate aria-label="Cerrar">×</button></div>
         <label for="api-url">URL del Cloudflare Worker</label>
-        <input id="api-url" type="url" placeholder="https://licita-control-api.alangarcia-apr.workers.dev" required />
-        <p>Se guarda solo en este navegador. El ticket nunca se ingresa aquí.</p>
-        <div class="dialog-actions"><button id="test-api" class="ghost-button" type="button">Probar conexión</button><button class="primary-button" value="save">Guardar</button></div>
+        <input id="api-url" type="url" required />
+        <p>Preferencia de este navegador. Nunca ingreses aquí el ticket.</p>
+        <p id="settings-status" role="status" aria-live="polite"></p>
+        <div class="dialog-actions"><button id="test-api" class="ghost-button" type="button">Probar servidor</button><button class="primary-button" value="save">Guardar</button></div>
       </form>
     </dialog>
     <script type="module" src="./app.js"></script>

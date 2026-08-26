@@ -4,8 +4,8 @@
   "private": true,
   "description": "Radar inteligente y auditable para oportunidades de Mercado Público de Chile.",
   "scripts": {
-    "check": "npm --prefix worker run check",
-    "test": "npm --prefix worker test",
+    "check": "npm --prefix worker run check && node --check frontend/app.js && node --check frontend/view-utils.js && node --check frontend/sw.js",
+    "test": "npm --prefix worker test && node --test test/frontend.test.mjs",
     "dev:api": "npm --prefix worker run dev",
     "deploy:api": "npm --prefix worker run deploy"
   },
@@ -13,4 +13,3 @@
     "node": ">=22"
   }
 }
-

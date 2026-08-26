@@ -1,6 +1,6 @@
 # LicitaControl IA
 
-LicitaControl IA es un radar operativo especializado en Compra Ágil para encontrar, entender y priorizar oportunidades de Mercado Público. La meta no es reemplazar el portal oficial: es transformar sus datos en una decisión explicable para cada empresa.
+LicitaControl IA ayuda a revisar oportunidades de Mercado Público con evidencia. La versión operativa actual consulta licitaciones por código mediante API v1. La especialización en Compra Ágil se conserva como siguiente etapa, sin bloquear el uso de la integración disponible.
 
 ## Estado actual
 
@@ -10,11 +10,10 @@ Este repositorio contiene el primer MVP reconstruido:
 - Entrada raíz `index.html` que dirige a la PWA.
 - Cloudflare Worker en `worker/`.
 - `GET /health` para comprobar la configuración.
-- `GET /api/compra-agil` para buscar oportunidades abiertas por palabra clave, región y página.
-- `GET /api/compra-agil/{codigo}` para consultar el detalle oficial de una Compra Ágil.
-- `GET /api/licitacion/{codigo}` se conserva para compatibilidad con la consulta individual anterior.
+- `GET /api/licitacion/{codigo}` es el flujo principal: código oficial → ficha normalizada → frontend.
+- `GET /api/compra-agil` y `GET /api/compra-agil/{codigo}` se conservan en el Worker, pendientes de validación real de acceso v2. El frontend no los consulta automáticamente.
 - Ticket de Mercado Público aislado en el secreto `MERCADO_PUBLICO_TICKET`.
-- Pruebas unitarias del normalizador y validación TypeScript.
+- Pruebas de normalizadores, contrato HTTP, redacción de errores, límites de respuesta y utilidades del frontend; validación TypeScript.
 
 ## Arquitectura
 
@@ -38,11 +37,7 @@ Requisitos: Node.js 22 o superior.
 npm --prefix worker install
 ```
 
-Crea `worker/.dev.vars` —está ignorado por Git— con:
-
-```dotenv
-MERCADO_PUBLICO_TICKET=tu_ticket_real
-```
+Para pruebas unitarias no necesitas el ticket: se usan datos sintéticos y credenciales generadas durante la prueba. Si necesitas consultar localmente, configura el binding `MERCADO_PUBLICO_TICKET` solo en `worker/.dev.vars` (ignorado por Git), sin imprimirlo ni compartirlo. Las consultas de producción reutilizan el secreto ya guardado en Cloudflare.
 
 Inicia la API:
 
@@ -78,22 +73,34 @@ Frontend de producción: `https://licita-control-ia.pages.dev`.
 
 El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita ni recibe el ticket; todas las consultas pasan por el Worker.
 
+## Contrato y seguridad de la consulta
+
+- El código debe coincidir con `CodigoExterno`; una respuesta vacía o de otro proceso nunca se atribuye al código solicitado.
+- Los campos ausentes se muestran como no informados. No se inventan datos empresariales, montos ni probabilidad de adjudicación.
+- `meta.retrievedAt` indica cuándo se recibió la ficha; no es una fecha de modificación del proceso.
+- Las fechas de Mercado Público sin zona horaria se muestran conservando su hora textual, sin convertirlas usando la zona del navegador. `DiasCierreLicitacion` se etiqueta como dato de la API, no como cálculo propio.
+- Región y comuna pertenecen al comprador, no necesariamente al lugar de entrega.
+- Solo un listado oficial vacío devuelve 404. Una estructura inválida o error de aplicación con HTTP 200 devuelve 502. 401/403 upstream devuelve 503; 429 conserva el límite temporal.
+- Los mensajes de excepción, URLs upstream y cuerpos de error no se registran ni devuelven. Las trazas de fetch están desactivadas porque la API v1 transporta el ticket en la URL upstream. No habilitarlas sin verificar redacción de credenciales.
+- La lectura JSON limita los bytes reales a 5 MB, incluso sin `Content-Length`. No se siguen redirecciones upstream que podrían reenviar credenciales.
+- `/health` informa disponibilidad/configuración, no autenticación efectiva contra Mercado Público.
+- La caché offline conserva solo recursos de la interfaz, nunca consultas ni salud de la API.
+
 ## Límites del MVP
 
-- Consulta en tiempo real la API beta de Compra Ágil; todavía no mantiene una sincronización histórica propia.
+- Consulta individual de licitaciones v1; no incluye todavía listados automáticos ni historial de órdenes AG.
+- Compra Ágil v2 sigue pendiente de validar: un HTTP 403 no demuestra por sí solo que se necesite un ticket diferente o una habilitación especial.
 - No incorpora autenticación, base de datos ni análisis documental.
-- La urgencia se calcula de forma determinista desde la fecha de cierre; no representa probabilidad de adjudicación.
+- El conteo de productos es determinista; el checklist es orientación de revisión y no un dictamen de admisibilidad.
 - La compatibilidad empresarial se implementará después de definir el perfil y reglas auditables.
 - La postulación oficial continúa realizándose en Mercado Público.
 
 ## Próximos hitos
 
-1. Estabilizar el radar real de Compra Ágil.
-2. Añadir perfil empresarial, favoritos y descartados.
-3. Implementar alertas de cierre y nuevas coincidencias.
-4. Implementar compatibilidad objetiva por servicio, región, monto, equipo y plazo.
-5. Incorporar persistencia multiempresa.
-6. Analizar bases y anexos con citas al documento y página.
-7. Añadir auditor de admisibilidad, simulador y evaluación económica.
+1. Validar y publicar la consulta individual v1 con el secreto existente.
+2. Añadir búsqueda de licitaciones por fecha/estado y filtros sobre datos oficiales.
+3. Incorporar órdenes de compra AG como historial, sin presentarlas como oportunidades abiertas.
+4. Resolver la causa del rechazo de API2 y validar datos reales antes de activar el radar de Compra Ágil.
+5. Solo después de estabilizar el flujo: perfil empresarial, persistencia y análisis documental con evidencia.
 
 La estrategia de producto y el análisis comparativo están documentados en `docs/PRODUCTO_COMPRA_AGIL.md`.
