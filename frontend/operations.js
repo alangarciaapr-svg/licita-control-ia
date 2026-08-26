@@ -139,7 +139,11 @@ function renderCatalog() {
     article.append(identity, node('span', formatMoney(item.price), 'asset-price'));
     const remove = node('button', 'Eliminar', 'remove-button');
     remove.type = 'button';
-    remove.addEventListener('click', () => { writeList(CATALOG_KEY, items.filter((entry) => entry.id !== item.id)); renderCatalog(); });
+    remove.addEventListener('click', () => {
+      writeList(CATALOG_KEY, items.filter((entry) => entry.id !== item.id));
+      renderCatalog();
+      window.dispatchEvent(new CustomEvent('licita:catalog-changed'));
+    });
     article.append(remove);
     return article;
   });
@@ -242,6 +246,7 @@ export function initOperations() {
     event.currentTarget.reset();
     setInlineMessage('catalog-message', 'Producto guardado localmente.');
     renderCatalog();
+    window.dispatchEvent(new CustomEvent('licita:catalog-changed'));
   });
 
   byId('document-form').addEventListener('submit', async (event) => {

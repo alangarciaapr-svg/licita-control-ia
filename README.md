@@ -96,22 +96,22 @@ El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita
 
 ## Límites del MVP
 
-- Consulta individual de licitaciones v1; no incluye todavía listados automáticos ni historial de órdenes AG.
+- El radar automático cubre las licitaciones publicadas consultables mediante API v1; no incluye todavía historial de órdenes AG ni oportunidades de Compra Ágil v2.
 - Compra Ágil v2 sigue pendiente de validar: un HTTP 403 no demuestra por sí solo que se necesite un ticket diferente o una habilitación especial.
 - El radar automático actual cubre licitaciones v1. No es todavía un servicio en segundo plano ni envía notificaciones cuando el navegador está cerrado.
 - El conector beta todavía no llena ni envía formularios oficiales: cada modalidad debe mapearse y probarse contra Mercado Público antes de activar transacciones reales. Siempre se conservará una confirmación humana final.
-- No incorpora autenticación, base de datos ni análisis documental.
+- No incorpora autenticación ni base de datos remota. La cola, catálogo y bóveda documental son locales al dispositivo; los documentos aún no se analizan automáticamente.
 - El conteo de productos es determinista; el checklist es orientación de revisión y no un dictamen de admisibilidad.
 - Los checks son confirmaciones manuales de la persona usuaria, no verificaciones automáticas ni evidencia de que una oferta fue recibida.
-- La compatibilidad empresarial se implementará después de definir el perfil y reglas auditables.
+- La compatibilidad empresarial actual es un filtro textual determinista y explicable; no evalúa por sí sola capacidad, admisibilidad ni probabilidad de adjudicación.
 - La postulación oficial continúa realizándose en Mercado Público.
 
 ## Próximos hitos
 
-1. Validar y publicar la consulta individual v1 con el secreto existente.
-2. Añadir búsqueda de licitaciones por fecha/estado y filtros sobre datos oficiales.
-3. Incorporar órdenes de compra AG como historial, sin presentarlas como oportunidades abiertas.
-4. Resolver la causa del rechazo de API2 y validar datos reales antes de activar el radar de Compra Ágil.
-5. Solo después de estabilizar el flujo: perfil empresarial, persistencia y análisis documental con evidencia.
+1. Resolver la causa del rechazo de API2 y validar datos reales antes de activar el radar de Compra Ágil.
+2. Incorporar órdenes de compra AG como historial, sin presentarlas como oportunidades abiertas.
+3. Añadir notificaciones programadas y sincronización segura opcional del centro operativo.
+4. Mapear el conector contra flujos oficiales reales, manteniendo confirmación humana final.
+5. Incorporar análisis documental con citas de archivo, página y fragmento de respaldo.
 
 La estrategia de producto y el análisis comparativo están documentados en `docs/PRODUCTO_COMPRA_AGIL.md`.

@@ -77,3 +77,11 @@ test('catalog coverage matches tender items deterministically without inventing 
   assert.equal(result.matched, 1);
   assert.deepEqual(result.matches[0], { itemIndex: 0, itemName: 'Licencia de software empresarial', productId: 'p1', productName: 'Microsoft 365', price: 12990 });
 });
+
+test('catalog changes refresh coverage in an already open tender', () => {
+  const appSource = readFileSync(new URL('../frontend/app.js', import.meta.url), 'utf8');
+  const operationsSource = readFileSync(new URL('../frontend/operations.js', import.meta.url), 'utf8');
+  assert.match(operationsSource, /licita:catalog-changed/);
+  assert.match(appSource, /addEventListener\('licita:catalog-changed'/);
+  assert.match(appSource, /id = 'catalog-coverage'/);
+});

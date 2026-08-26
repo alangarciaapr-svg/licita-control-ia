@@ -11,6 +11,7 @@ let activeRequest;
 let radarRequest;
 let currentCode = '';
 let currentAgileCode = '';
+let currentTenderItems = [];
 
 function setMessage(text, error = false) {
   byId('message').textContent = text;
@@ -149,6 +150,12 @@ function verification(title, detail) {
   return item;
 }
 
+function refreshCatalogCoverage(tenderItems) {
+  const coverage = catalogCoverageForTender(tenderItems);
+  const detail = document.getElementById('catalog-coverage')?.querySelector('small');
+  if (detail) detail.textContent = `${coverage.matched} de ${coverage.total} ítems tienen una coincidencia local. Es un cálculo textual; confirma producto, precio y especificaciones.`;
+}
+
 function setupChecklist(containerId, progressId, items) {
   const container = byId(containerId);
   const progress = byId(progressId);
@@ -190,6 +197,7 @@ const agileSteps = [
 
 function renderTender(tender, meta) {
   currentCode = tender.code;
+  currentTenderItems = tender.items;
   byId('detail-status').textContent = tender.status || 'Estado no informado';
   byId('detail-title').textContent = tender.name || 'Nombre no informado';
   byId('detail-code').textContent = `Licitación ${tender.code}`;
@@ -217,7 +225,11 @@ function renderTender(tender, meta) {
   const missing = [!tender.name && 'nombre', !tender.description && 'descripción', !tender.dates.closing && 'cierre', !tender.buyer.organization && 'organismo', !tender.items.length && 'productos estructurados'].filter(Boolean);
   if (missing.length) checks.unshift(verification('Datos ausentes en esta respuesta', `Falta verificar: ${missing.join(', ')}. No se completaron con supuestos.`));
   const catalogCoverage = catalogCoverageForTender(tender.items);
-  if (catalogCoverage.total) checks.unshift(verification('Cobertura del catálogo', `${catalogCoverage.matched} de ${catalogCoverage.total} ítems tienen una coincidencia local. Es un cálculo textual; confirma producto, precio y especificaciones.`));
+  if (catalogCoverage.total) {
+    const catalogCheck = verification('Cobertura del catálogo', `${catalogCoverage.matched} de ${catalogCoverage.total} ítems tienen una coincidencia local. Es un cálculo textual; confirma producto, precio y especificaciones.`);
+    catalogCheck.id = 'catalog-coverage';
+    checks.unshift(catalogCheck);
+  }
   byId('verification-list').replaceChildren(...checks);
   byId('product-count').textContent = `${tender.items.length} ítems · conteo calculado`;
   byId('product-list').replaceChildren(...tender.items.map((product) => {
@@ -269,6 +281,10 @@ window.addEventListener('licita:open-tender', (event) => {
   byId('tender-form').requestSubmit();
 });
 
+window.addEventListener('licita:catalog-changed', () => {
+  if (currentTenderItems.length) refreshCatalogCoverage(currentTenderItems);
+});
+
 byId('tender-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   activeRequest?.abort();
@@ -277,6 +293,7 @@ byId('tender-form').addEventListener('submit', async (event) => {
   const timeout = setTimeout(() => controller.abort(), 25000);
   byId('detalle').hidden = true;
   currentCode = '';
+  currentTenderItems = [];
   byId('query-button').disabled = true;
   byId('query-button').textContent = 'Consultando…';
   byId('consulta').setAttribute('aria-busy', 'true');
