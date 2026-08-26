@@ -228,7 +228,8 @@ dialog p { color: var(--muted); font-size: 0.82rem; margin: 10px 0 0; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 
 @media (max-width: 1080px) {
-  .app-shell { grid-template-columns: 1fr; }
+  .app-shell { grid-template-columns: minmax(0, 1fr); }
+  .app-shell > *, main { min-width: 0; max-width: 100%; }
   .sidebar { position: static; width: 100%; height: auto; padding: 18px 24px; flex-direction: row; align-items: center; gap: 24px; }
   .nav { margin: 0 0 0 auto; display: flex; }
   .nav a span, .sidebar-note { display: none; }
@@ -252,4 +253,5 @@ dialog p { color: var(--muted); font-size: 0.82rem; margin: 10px 0 0; }
   .official-action a { width: 100%; justify-content: center; }
   .pipeline-item, .asset-item { grid-template-columns: 1fr; }
   .panel-heading { flex-direction: column; }
+  input[type="file"] { min-width: 0; max-width: 100%; }
 }

@@ -95,3 +95,10 @@ test('document form survives the asynchronous IndexedDB operation', () => {
   assert.match(operationsSource, /form\.reset\(\);/);
   assert.ok(!operationsSource.includes('event.currentTarget.reset()'));
 });
+
+test('mobile layout allows grid children and file inputs to shrink', () => {
+  const styles = readFileSync(new URL('../frontend/styles.css', import.meta.url), 'utf8');
+  assert.match(styles, /grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(styles, /\.app-shell > \*, main \{ min-width: 0; max-width: 100%; \}/);
+  assert.match(styles, /input\[type="file"\] \{ min-width: 0; max-width: 100%; \}/);
+});
