@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildCommercialProfile, formatOfficialDate, scoreOpportunity, validateTenderCode, validateAgileCode, validateApiUrl } from '../frontend/view-utils.js';
+import { calculateCatalogCoverage } from '../frontend/operations.js';
 
 test('tender input is normalized and COT codes are clearly separated', () => {
   assert.equal(validateTenderCode(' 123-45-le26 '), '123-45-LE26');
@@ -41,9 +42,11 @@ test('radar matching is deterministic, explainable and respects exclusions and l
 test('static frontend contract: all script IDs exist, no secret field or automatic v2 query', () => {
   const html = readFileSync(new URL('../frontend/index.html', import.meta.url), 'utf8');
   const js = readFileSync(new URL('../frontend/app.js', import.meta.url), 'utf8');
+  const operations = readFileSync(new URL('../frontend/operations.js', import.meta.url), 'utf8');
   const ids = [...html.matchAll(/id="([^"]+)"/g)].map((match) => match[1]);
   assert.equal(new Set(ids).size, ids.length);
   for (const [, id] of js.matchAll(/byId\('([^']+)'\)/g)) assert.ok(ids.includes(id), `Missing element: ${id}`);
+  for (const [, id] of operations.matchAll(/byId\('([^']+)'\)/g)) assert.ok(ids.includes(id), `Missing operations element: ${id}`);
   assert.ok(!js.includes('/api/compra-agil'));
   assert.ok(html.includes('id="agile-form"'));
   assert.ok(html.includes('id="radar-form"'));
@@ -52,4 +55,25 @@ test('static frontend contract: all script IDs exist, no secret field or automat
   assert.ok(js.includes('Postular en Mercado Público'));
   assert.ok(!html.includes('name="ticket"'));
   assert.ok(!js.includes('innerHTML'));
+  assert.ok(!operations.includes('innerHTML'));
+});
+
+test('browser connector uses minimum permissions and never requests credentials or cookies', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
+  const background = readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+  assert.deepEqual(manifest.permissions, ['storage']);
+  assert.ok(manifest.host_permissions.every((value) => value.startsWith('https://')));
+  assert.ok(!manifest.permissions.includes('cookies'));
+  assert.ok(!background.includes('document.cookie'));
+  assert.ok(!background.includes('password'));
+});
+
+test('catalog coverage matches tender items deterministically without inventing products', () => {
+  const result = calculateCatalogCoverage(
+    [{ name: 'Licencia de software empresarial', description: 'Soporte anual', category: 'Tecnología' }, { name: 'Notebook', description: null, category: 'Computadores' }],
+    [{ id: 'p1', name: 'Microsoft 365', keywords: 'software, licencia', price: 12990 }],
+  );
+  assert.equal(result.total, 2);
+  assert.equal(result.matched, 1);
+  assert.deepEqual(result.matches[0], { itemIndex: 0, itemName: 'Licencia de software empresarial', productId: 'p1', productName: 'Microsoft 365', price: 12990 });
 });

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "LicitaControl IA · Conector local",
+  "version": "0.1.0",
+  "description": "Puente local entre LicitaControl IA y la sesión del proveedor en Mercado Público.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://licita-control-ia.pages.dev/*",
+    "https://mercadopublico.cl/*",
+    "https://*.mercadopublico.cl/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://licita-control-ia.pages.dev/*"],
+      "js": ["content-app.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://mercadopublico.cl/*", "https://*.mercadopublico.cl/*"],
+      "js": ["content-market.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": { "default_title": "LicitaControl IA" }
+}

@@ -25,7 +25,8 @@
         <nav class="nav" aria-label="Navegación principal">
           <a class="active" href="#inicio"><span>01</span> Inicio</a>
           <a href="#radar"><span>02</span> Radar automático</a>
-          <a href="#procesos"><span>03</span> Preparar oferta</a>
+          <a href="#operaciones"><span>03</span> Centro operativo</a>
+          <a href="#procesos"><span>04</span> Preparar oferta</a>
         </nav>
         <div class="sidebar-note"><div><strong>Radar v1 activo</strong><small>Matching auditable, sin caja negra</small></div></div>
       </aside>
@@ -66,6 +67,55 @@
             <div id="opportunity-list" class="opportunity-list"></div>
           </div>
           <p class="method-note">El perfil queda guardado únicamente en este navegador. Al volver a abrir la app, el radar ejecuta una nueva detección del día.</p>
+        </section>
+        <section id="operaciones" class="workspace-card operations-center">
+          <div class="section-heading"><div><span class="eyebrow">DE LA OPORTUNIDAD AL ENVÍO</span><h2>Centro operativo</h2></div><span id="connector-badge" class="connection-badge neutral">Conector no detectado</span></div>
+          <div class="operations-metrics" aria-label="Estado de las postulaciones">
+            <article><span>En análisis</span><strong id="metric-analysis">0</strong></article>
+            <article><span>Preparando</span><strong id="metric-preparing">0</strong></article>
+            <article><span>Listas para enviar</span><strong id="metric-ready">0</strong></article>
+            <article><span>Enviadas</span><strong id="metric-sent">0</strong></article>
+          </div>
+          <div class="workspace-tabs" role="tablist" aria-label="Módulos del centro operativo">
+            <button class="workspace-tab active" type="button" role="tab" aria-selected="true" data-workspace-tab="pipeline">Pipeline</button>
+            <button class="workspace-tab" type="button" role="tab" aria-selected="false" data-workspace-tab="catalog">Catálogo</button>
+            <button class="workspace-tab" type="button" role="tab" aria-selected="false" data-workspace-tab="documents">Documentos</button>
+            <button class="workspace-tab" type="button" role="tab" aria-selected="false" data-workspace-tab="connector">Conector local</button>
+          </div>
+          <div id="workspace-pipeline" class="workspace-panel" role="tabpanel">
+            <div class="panel-heading"><div><h3>Cola de postulaciones</h3><p>Crea un expediente desde cualquier resultado del radar y controla su avance.</p></div><span id="pipeline-count" class="count-chip">0 expedientes</span></div>
+            <div id="pipeline-list" class="pipeline-list"></div>
+          </div>
+          <div id="workspace-catalog" class="workspace-panel" role="tabpanel" hidden>
+            <div class="panel-heading"><div><h3>Catálogo empresarial</h3><p>Productos y servicios reutilizables para completar futuras ofertas.</p></div><span id="catalog-count" class="count-chip">0 productos</span></div>
+            <form id="catalog-form" class="asset-form">
+              <div class="field-group"><label for="catalog-name">Producto o servicio</label><input id="catalog-name" maxlength="160" required /></div>
+              <div class="field-group"><label for="catalog-sku">SKU o código interno</label><input id="catalog-sku" maxlength="80" /></div>
+              <div class="field-group"><label for="catalog-price">Precio neto referencial</label><input id="catalog-price" type="number" min="0" step="1" /></div>
+              <div class="field-group"><label for="catalog-keywords">Palabras de coincidencia</label><input id="catalog-keywords" maxlength="240" placeholder="software, licencia, soporte" /></div>
+              <button class="primary-button" type="submit">Agregar al catálogo</button>
+            </form>
+            <div id="catalog-message" class="message" role="status" aria-live="polite" hidden></div>
+            <div id="catalog-list" class="asset-list"></div>
+          </div>
+          <div id="workspace-documents" class="workspace-panel" role="tabpanel" hidden>
+            <div class="panel-heading"><div><h3>Bóveda documental local</h3><p>Archivos recurrentes guardados únicamente en este dispositivo.</p></div><span id="document-count" class="count-chip">0 documentos</span></div>
+            <form id="document-form" class="asset-form document-form">
+              <div class="field-group"><label for="document-file">Archivo</label><input id="document-file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" required /></div>
+              <div class="field-group"><label for="document-category">Categoría</label><select id="document-category"><option>Administrativo</option><option>Técnico</option><option>Financiero</option><option>Comercial</option></select></div>
+              <div class="field-group"><label for="document-expiry">Vencimiento</label><input id="document-expiry" type="date" /></div>
+              <button class="primary-button" type="submit">Guardar documento</button>
+            </form>
+            <div id="document-message" class="message" role="status" aria-live="polite" hidden></div>
+            <div id="document-list" class="asset-list"></div>
+          </div>
+          <div id="workspace-connector" class="workspace-panel" role="tabpanel" hidden>
+            <div class="connector-grid">
+              <article class="connector-card"><span class="eyebrow">PUENTE SEGURO</span><h3>Conector LicitaControl</h3><p>Utiliza la sesión de Mercado Público iniciada en tu navegador. No solicita ni guarda tu Clave Única.</p><div id="connector-status" class="connector-status"><i></i><span>Esperando la extensión local</span></div><div class="connector-actions"><a class="primary-button" href="./extension.zip" download>Descargar conector beta</a><button id="connector-test" class="ghost-button" type="button">Comprobar conexión</button></div></article>
+              <article class="connector-card steps"><span class="eyebrow">FLUJO CONTROLADO</span><ol><li><strong>Instala</strong><span>Descomprime y carga la extensión en Chrome.</span></li><li><strong>Inicia sesión</strong><span>Autentícate directamente en Mercado Público.</span></li><li><strong>Revisa</strong><span>LicitaControl prepara el paquete y exige confirmación.</span></li><li><strong>Envía</strong><span>El conector completa el portal y recupera el comprobante.</span></li></ol></article>
+            </div>
+            <p class="method-note">Esta versión beta implementa el puente, estado de conexión y paquetes de trabajo. Los selectores de cada formulario oficial deben validarse antes de habilitar envíos reales.</p>
+          </div>
         </section>
         <section id="procesos" class="workspace-card">
           <div class="section-heading"><div><span class="eyebrow">ELIGE TU RUTA</span><h2>¿Qué quieres preparar?</h2></div></div>

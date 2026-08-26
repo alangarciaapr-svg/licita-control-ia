@@ -1,4 +1,5 @@
 import { buildCommercialProfile, formatOfficialDate, scoreOpportunity, validateTenderCode, validateAgileCode, validateApiUrl } from './view-utils.js';
+import { addOpportunityToPipeline, catalogCoverageForTender, initOperations } from './operations.js';
 
 const DEFAULT_API_URL = 'https://licita-control-api.alangarcia-apr.workers.dev';
 const API_STORAGE_KEY = 'licita-control-api-url';
@@ -84,6 +85,7 @@ function renderOpportunities(items, profile, payload) {
     const button = node('button', 'Crear expediente →', 'view-button');
     button.type = 'button';
     button.addEventListener('click', () => {
+      addOpportunityToPipeline(opportunity, match);
       byId('tender-code').value = opportunity.code;
       byId('tender-form').requestSubmit();
     });
@@ -214,6 +216,8 @@ function renderTender(tender, meta) {
   ];
   const missing = [!tender.name && 'nombre', !tender.description && 'descripción', !tender.dates.closing && 'cierre', !tender.buyer.organization && 'organismo', !tender.items.length && 'productos estructurados'].filter(Boolean);
   if (missing.length) checks.unshift(verification('Datos ausentes en esta respuesta', `Falta verificar: ${missing.join(', ')}. No se completaron con supuestos.`));
+  const catalogCoverage = catalogCoverageForTender(tender.items);
+  if (catalogCoverage.total) checks.unshift(verification('Cobertura del catálogo', `${catalogCoverage.matched} de ${catalogCoverage.total} ítems tienen una coincidencia local. Es un cálculo textual; confirma producto, precio y especificaciones.`));
   byId('verification-list').replaceChildren(...checks);
   byId('product-count').textContent = `${tender.items.length} ítems · conteo calculado`;
   byId('product-list').replaceChildren(...tender.items.map((product) => {
@@ -256,6 +260,13 @@ byId('radar-form').addEventListener('submit', (event) => {
 byId('radar-refresh').addEventListener('click', () => {
   try { void runRadar(profileFromForm()); }
   catch (error) { setRadarMessage(error instanceof Error ? error.message : 'El perfil comercial no es válido.', true); }
+});
+
+window.addEventListener('licita:open-tender', (event) => {
+  const code = event.detail?.code;
+  if (typeof code !== 'string') return;
+  byId('tender-code').value = code;
+  byId('tender-form').requestSubmit();
 });
 
 byId('tender-form').addEventListener('submit', async (event) => {
@@ -368,3 +379,5 @@ try {
 } catch {
   try { localStorage.removeItem(RADAR_PROFILE_STORAGE_KEY); } catch { /* Storage can be unavailable. */ }
 }
+
+initOperations();

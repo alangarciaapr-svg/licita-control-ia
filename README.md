@@ -17,6 +17,9 @@ Este repositorio contiene el primer MVP reconstruido:
 - Las dos rutas terminan con una continuación explícita a Mercado Público; la aplicación no maneja credenciales de proveedor ni envía ofertas.
 - El perfil comercial (palabras clave, exclusiones, regiones preferidas y plazo mínimo) queda solo en `localStorage`. Al abrir la aplicación se ejecuta automáticamente el radar del día.
 - El puntaje se calcula en código: coincidencias positivas, región informada, plazo y estado. Las exclusiones y un plazo insuficiente descartan la oportunidad; cada coincidencia visible explica sus señales.
+- El Centro Operativo mantiene una cola local de postulaciones con etapas de análisis, preparación, revisión, lista y enviada.
+- El catálogo empresarial reutiliza SKU, precios de referencia y términos de coincidencia. La bóveda documental guarda archivos en IndexedDB del dispositivo, con categoría y vencimiento.
+- `extension/` contiene el conector Chrome beta de mínimo privilegio. Confirma presencia de la extensión, actividad del dominio oficial y recibe paquetes por código sin acceder a contraseñas ni cookies.
 - Ticket de Mercado Público aislado en el secreto `MERCADO_PUBLICO_TICKET`.
 - Pruebas de normalizadores, contrato HTTP, redacción de errores, límites de respuesta y utilidades del frontend; validación TypeScript.
 
@@ -96,6 +99,7 @@ El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita
 - Consulta individual de licitaciones v1; no incluye todavía listados automáticos ni historial de órdenes AG.
 - Compra Ágil v2 sigue pendiente de validar: un HTTP 403 no demuestra por sí solo que se necesite un ticket diferente o una habilitación especial.
 - El radar automático actual cubre licitaciones v1. No es todavía un servicio en segundo plano ni envía notificaciones cuando el navegador está cerrado.
+- El conector beta todavía no llena ni envía formularios oficiales: cada modalidad debe mapearse y probarse contra Mercado Público antes de activar transacciones reales. Siempre se conservará una confirmación humana final.
 - No incorpora autenticación, base de datos ni análisis documental.
 - El conteo de productos es determinista; el checklist es orientación de revisión y no un dictamen de admisibilidad.
 - Los checks son confirmaciones manuales de la persona usuaria, no verificaciones automáticas ni evidencia de que una oferta fue recibida.
