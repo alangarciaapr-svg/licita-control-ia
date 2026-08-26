@@ -56,6 +56,8 @@ test('static frontend contract: all script IDs exist, no secret field or automat
   assert.ok(!html.includes('name="ticket"'));
   assert.ok(!js.includes('innerHTML'));
   assert.ok(!operations.includes('innerHTML'));
+  assert.ok(!html.includes('El conector completa el portal'));
+  assert.ok(html.includes('los formularios automáticos aún no están habilitados'));
 });
 
 test('browser connector uses minimum permissions and never requests credentials or cookies', () => {
