@@ -87,3 +87,11 @@ test('catalog changes refresh coverage in an already open tender', () => {
   assert.match(appSource, /addEventListener\('licita:catalog-changed'/);
   assert.match(appSource, /id = 'catalog-coverage'/);
 });
+
+test('document form survives the asynchronous IndexedDB operation', () => {
+  const operationsSource = readFileSync(new URL('../frontend/operations.js', import.meta.url), 'utf8');
+  assert.match(operationsSource, /const form = event\.currentTarget;/);
+  assert.match(operationsSource, /await documentOperation\('put'/);
+  assert.match(operationsSource, /form\.reset\(\);/);
+  assert.ok(!operationsSource.includes('event.currentTarget.reset()'));
+});

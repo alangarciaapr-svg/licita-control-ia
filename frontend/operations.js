@@ -236,6 +236,7 @@ export function initOperations() {
 
   byId('catalog-form').addEventListener('submit', (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
     const name = byId('catalog-name').value.trim();
     const priceValue = byId('catalog-price').value.trim();
     const price = priceValue ? Number(priceValue) : null;
@@ -243,7 +244,7 @@ export function initOperations() {
     const items = readList(CATALOG_KEY);
     items.unshift({ id: crypto.randomUUID(), name, sku: byId('catalog-sku').value.trim(), price, keywords: byId('catalog-keywords').value.trim(), updatedAt: new Date().toISOString() });
     writeList(CATALOG_KEY, items);
-    event.currentTarget.reset();
+    form.reset();
     setInlineMessage('catalog-message', 'Producto guardado localmente.');
     renderCatalog();
     window.dispatchEvent(new CustomEvent('licita:catalog-changed'));
@@ -251,12 +252,13 @@ export function initOperations() {
 
   byId('document-form').addEventListener('submit', async (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
     const file = byId('document-file').files?.[0];
     if (!file) return;
     if (file.size > MAX_DOCUMENT_BYTES) return setInlineMessage('document-message', 'El documento supera el máximo local de 10 MB.', true);
     try {
       await documentOperation('put', { id: crypto.randomUUID(), name: file.name, type: file.type, size: file.size, category: byId('document-category').value, expiresAt: byId('document-expiry').value || null, file, updatedAt: new Date().toISOString() });
-      event.currentTarget.reset();
+      form.reset();
       setInlineMessage('document-message', 'Documento guardado únicamente en este dispositivo.');
       await renderDocuments();
     } catch (error) { setInlineMessage('document-message', error instanceof Error ? error.message : 'No se pudo guardar el documento.', true); }
