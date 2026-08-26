@@ -4,17 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#071712" />
-    <meta name="description" content="Consulta licitaciones por código con datos oficiales de Mercado Público. Revisa qué se compra, fechas y antecedentes pendientes." />
+    <meta name="description" content="Prepara tu participación en licitaciones y Compras Ágiles con evidencia, checklists y continuación segura a Mercado Público." />
     <meta property="og:title" content="LicitaControl IA" />
-    <meta property="og:description" content="Consulta oficial de licitaciones por código. Evidencia para decidir qué revisar." />
+    <meta property="og:description" content="Prepara licitaciones y Compras Ágiles. Verifica antes de ofertar en Mercado Público." />
     <meta property="og:image" content="https://licita-control-ia.pages.dev/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LicitaControl IA" />
-    <meta name="twitter:description" content="Consulta oficial de licitaciones por código. Evidencia para decidir qué revisar." />
+    <meta name="twitter:description" content="Prepara licitaciones y Compras Ágiles. Verifica antes de ofertar en Mercado Público." />
     <meta name="twitter:image" content="https://licita-control-ia.pages.dev/og.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>LicitaControl IA · Consulta oficial</title>
+    <title>LicitaControl IA · Prepara tu postulación</title>
   </head>
   <body>
     <div class="app-shell">
@@ -24,36 +24,43 @@
         </a>
         <nav class="nav" aria-label="Navegación principal">
           <a class="active" href="#inicio"><span>01</span> Inicio</a>
-          <a href="#consulta"><span>02</span> Consultar código</a>
-          <a href="#metodo"><span>03</span> Qué verificar</a>
+          <a href="#procesos"><span>02</span> Elegir proceso</a>
+          <a href="#metodo"><span>03</span> Preparar oferta</a>
         </nav>
-        <div class="sidebar-note"><div><strong>Mercado Público · v1</strong><small>Consulta individual</small></div></div>
+        <div class="sidebar-note"><div><strong>2 rutas de preparación</strong><small>Envío final en Mercado Público</small></div></div>
       </aside>
       <main>
         <header class="topbar">
-          <div><span class="eyebrow">ESPACIO DE REVISIÓN PARA PROVEEDORES</span><h1>Decide con evidencia.</h1></div>
+          <div><span class="eyebrow">ESPACIO DE PREPARACIÓN PARA PROVEEDORES</span><h1>Postula con control.</h1></div>
           <button id="open-settings" class="ghost-button" type="button">Conexión API</button>
         </header>
         <section id="inicio" class="hero-panel">
           <div class="hero-copy">
-            <span class="pill">CONSULTA OFICIAL · SIN DATOS SIMULADOS</span>
-            <h2>Un código.<br />Lo que necesitas revisar.</h2>
-            <p>Consulta una licitación de Mercado Público y reúne su descripción, comprador, fechas y productos. Identifica qué está informado y qué falta comprobar antes de preparar una oferta.</p>
-            <a class="primary-button hero-action" href="#consulta">Consultar una licitación</a>
+            <span class="pill">LICITACIONES + COMPRA ÁGIL</span>
+            <h2>Prepara aquí.<br />Envía en el canal oficial.</h2>
+            <p>Organiza la revisión previa de una licitación o una Compra Ágil, confirma requisitos y continúa a Mercado Público para enviar tu oferta o cotización.</p>
+            <a class="primary-button hero-action" href="#procesos">Elegir tipo de proceso</a>
           </div>
           <div class="decision-dial" aria-label="Apoyo a la revisión, no recomendación automática">
-            <span>TU SIGUIENTE PASO</span><strong>REVISAR</strong><small>HECHOS · FECHAS · REQUISITOS</small><div class="dial-ring"></div>
+            <span>TU SIGUIENTE PASO</span><strong>PREPARAR</strong><small>VERIFICAR · ADJUNTAR · ENVIAR</small><div class="dial-ring"></div>
           </div>
         </section>
         <section class="metrics" aria-label="Alcance de esta versión">
           <article><span>Fuente</span><strong>ChileCompra</strong><small>Datos oficiales consultados</small></article>
-          <article><span>Consulta</span><strong>Por código</strong><small>Licitaciones, no cotizaciones COT</small></article>
-          <article><span>Análisis</span><strong>Sin puntajes de IA</strong><small>Sin probabilidades inventadas</small></article>
+          <article><span>Procesos</span><strong>Dos rutas</strong><small>Licitación y Compra Ágil</small></article>
+          <article><span>Requisito común</span><strong>Proveedor hábil</strong><small>Debes confirmarlo en el Registro</small></article>
           <article><span>Presentación</span><strong>Mercado Público</strong><small>Canal oficial de ofertas</small></article>
+        </section>
+        <section id="procesos" class="workspace-card">
+          <div class="section-heading"><div><span class="eyebrow">ELIGE TU RUTA</span><h2>¿Qué quieres preparar?</h2></div></div>
+          <div class="path-grid">
+            <a class="path-card" href="#consulta"><span class="path-number">01</span><div><span class="eyebrow">OFERTA TÉCNICA Y ECONÓMICA</span><h3>Licitación</h3><p>Consulta la ficha oficial por código y reúne los controles previos a la oferta.</p></div><strong>Comenzar →</strong></a>
+            <a class="path-card agile" href="#compra-agil"><span class="path-number">02</span><div><span class="eyebrow">COTIZACIÓN SIMPLIFICADA</span><h3>Compra Ágil</h3><p>Registra el código COT y prepara la verificación antes de cotizar en Mercado Público.</p></div><strong>Comenzar →</strong></a>
+          </div>
         </section>
         <section id="consulta" class="workspace-card">
           <div class="section-heading">
-            <div><span class="eyebrow">PRIMERO, LA INFORMACIÓN REAL</span><h2>Consulta una licitación</h2></div>
+            <div><span class="eyebrow">RUTA 01 · LICITACIÓN</span><h2>Consulta la ficha oficial</h2></div>
             <span id="api-badge" class="connection-badge neutral" role="status">Servidor sin verificar</span>
           </div>
           <form id="tender-form" class="radar-form tender-form">
@@ -68,6 +75,15 @@
           <div id="message" class="message" role="status" aria-live="polite" hidden></div>
           <noscript><p class="message error">Activa JavaScript para consultar los datos oficiales.</p></noscript>
         </section>
+        <section id="compra-agil" class="workspace-card">
+          <div class="section-heading"><div><span class="eyebrow">RUTA 02 · COMPRA ÁGIL</span><h2>Prepara una cotización</h2></div><span class="connection-badge neutral">Datos API2 pendientes</span></div>
+          <form id="agile-form" class="radar-form tender-form">
+            <div class="field-group grow"><label for="agile-code">Código COT de Compra Ágil</label><input id="agile-code" name="codigo" type="text" placeholder="Ej. 1234567-89-COT26" autocomplete="off" spellcheck="false" maxlength="40" required /></div>
+            <button id="agile-button" class="primary-button" type="submit">Preparar cotización</button>
+          </form>
+          <p class="method-note">La ficha automática de Compra Ágil no se mostrará hasta validar API2. Puedes preparar el proceso sin atribuirle datos no confirmados.</p>
+          <div id="agile-message" class="message" role="status" aria-live="polite" hidden></div>
+        </section>
         <section id="detalle" class="detail-panel" hidden aria-labelledby="detail-title">
           <div class="detail-topline"><button id="close-detail" class="back-button" type="button">← Consultar otro código</button><span id="source-label" class="source-label"></span></div>
           <div class="detail-header">
@@ -80,16 +96,24 @@
             <article class="decision-card"><span class="eyebrow">NO ES UN DICTAMEN DE ADMISIBILIDAD</span><h3>Qué falta verificar</h3><div id="verification-list" class="verification-list"></div></article>
             <article class="products-card"><div class="section-heading compact"><div><span class="eyebrow">PRODUCTOS Y SERVICIOS OFICIALES</span><h3>Qué se compra</h3></div><span id="product-count" class="count-chip"></span></div><div id="product-list" class="product-list"></div></article>
           </div>
-          <div class="official-action"><div><strong>Revisa las bases y presenta tu oferta en Mercado Público.</strong><span>Esta ficha no reemplaza los documentos ni confirma que puedes participar.</span></div><button id="copy-code" class="ghost-button" type="button">Copiar código</button><a class="primary-button" href="https://www.mercadopublico.cl/" target="_blank" rel="noopener noreferrer">Ir al portal oficial ↗</a></div>
+          <article class="submission-card"><div class="section-heading compact"><div><span class="eyebrow">PREPARACIÓN DE ENVÍO</span><h3>Control antes de ofertar</h3></div><span id="tender-progress" class="count-chip">0 de 5 confirmados</span></div><div id="tender-checklist" class="submission-checklist"></div></article>
+          <div class="official-action"><div><strong id="tender-official-heading">Revisa las bases y presenta tu oferta en Mercado Público.</strong><span id="tender-official-note">Esta ficha no reemplaza los documentos ni confirma que puedes participar.</span></div><button id="copy-code" class="ghost-button" type="button">Copiar código</button><a id="tender-official-link" class="primary-button" href="https://www.mercadopublico.cl/Home" target="_blank" rel="noopener noreferrer">Continuar en Mercado Público ↗</a></div>
+        </section>
+        <section id="agile-detail" class="detail-panel" hidden aria-labelledby="agile-detail-title">
+          <div class="detail-topline"><button id="close-agile-detail" class="back-button" type="button">← Preparar otro código</button><span class="source-label">Código ingresado por ti · datos del proceso aún no consultados</span></div>
+          <div class="detail-header"><div><span class="pill">PREPARACIÓN MANUAL</span><h2 id="agile-detail-title" tabindex="-1">Compra Ágil</h2><p id="agile-detail-code"></p></div><div class="urgency-box"><span>ESTADO OFICIAL</span><strong>Por verificar</strong><small>Confirma publicación, llamado y cierre en Mercado Público.</small></div></div>
+          <p class="detail-description">Mientras API2 siga pendiente, LicitaControl no atribuirá comprador, presupuesto, productos ni plazos a este código. Usa el checklist para revisar la ficha oficial y preparar tu cotización.</p>
+          <article class="submission-card"><div class="section-heading compact"><div><span class="eyebrow">PREPARACIÓN DE COTIZACIÓN</span><h3>Control antes de cotizar</h3></div><span id="agile-progress" class="count-chip">0 de 5 confirmados</span></div><div id="agile-checklist" class="submission-checklist"></div></article>
+          <div class="official-action"><div><strong>La cotización se envía y confirma en Mercado Público.</strong><span>Busca el código COT, revisa el llamado vigente y confirma el envío antes del cierre.</span></div><button id="copy-agile-code" class="ghost-button" type="button">Copiar código COT</button><a class="primary-button" href="https://www.mercadopublico.cl/Home" target="_blank" rel="noopener noreferrer">Cotizar en Mercado Público ↗</a></div>
         </section>
         <section id="metodo" class="method-section">
-          <div class="section-heading"><div><span class="eyebrow">UN FLUJO CLARO</span><h2>De la consulta a la revisión</h2></div></div>
+          <div class="section-heading"><div><span class="eyebrow">UN FLUJO CLARO</span><h2>De la oportunidad al envío</h2></div></div>
           <div class="method-grid">
-            <article><span>01</span><strong>Consulta</strong><p>Introduce el código. La aplicación consulta la API oficial y no inventa campos ausentes.</p></article>
-            <article><span>02</span><strong>Contrasta</strong><p>Revisa comprador, fechas y productos. Una región del comprador no confirma el lugar de entrega.</p></article>
-            <article><span>03</span><strong>Verifica</strong><p>Comprueba bases, anexos, capacidad de entrega y requisitos de tu empresa en el portal oficial.</p></article>
+            <article><span>01</span><strong>Consulta</strong><p>En licitaciones, la app obtiene la ficha v1. En Compra Ágil, el código queda marcado como ingreso manual hasta validar API2.</p></article>
+            <article><span>02</span><strong>Prepara</strong><p>Confirma Registro de Proveedores hábil, bases o requerimientos, capacidad, documentos y oferta económica.</p></article>
+            <article><span>03</span><strong>Envía</strong><p>Inicia sesión en Mercado Público, busca el código y confirma allí la oferta técnica/económica o la cotización.</p></article>
           </div>
-          <p class="message">Compra Ágil: la conexión v2 sigue pendiente de validación. Esta versión no muestra sus oportunidades abiertas ni presenta órdenes históricas como nuevas oportunidades.</p>
+          <p class="message"><strong>Requisito oficial común:</strong> debes estar inscrito y en estado hábil en el Registro de Proveedores. LicitaControl no conoce ni confirma tu situación. <a href="https://www.chilecompra.cl/como-vender-al-estado/" target="_blank" rel="noopener noreferrer">Revisar orientación de ChileCompra ↗</a></p>
         </section>
       </main>
     </div>

@@ -1,6 +1,6 @@
 # LicitaControl IA
 
-LicitaControl IA ayuda a revisar oportunidades de Mercado Público con evidencia. La versión operativa actual consulta licitaciones por código mediante API v1. La especialización en Compra Ágil se conserva como siguiente etapa, sin bloquear el uso de la integración disponible.
+LicitaControl IA ayuda a preparar la participación en licitaciones y Compras Ágiles. No sustituye el sistema transaccional: la oferta técnica/económica o cotización se envía y confirma exclusivamente en Mercado Público.
 
 ## Estado actual
 
@@ -12,6 +12,8 @@ Este repositorio contiene el primer MVP reconstruido:
 - `GET /health` para comprobar la configuración.
 - `GET /api/licitacion/{codigo}` es el flujo principal: código oficial → ficha normalizada → frontend.
 - `GET /api/compra-agil` y `GET /api/compra-agil/{codigo}` se conservan en el Worker, pendientes de validación real de acceso v2. El frontend no los consulta automáticamente.
+- La ruta Compra Ágil acepta un código COT ingresado por la persona usuaria y genera un checklist manual. No presenta ese código ni sus datos como verificados mientras API2 no esté validada.
+- Las dos rutas terminan con una continuación explícita a Mercado Público; la aplicación no maneja credenciales de proveedor ni envía ofertas.
 - Ticket de Mercado Público aislado en el secreto `MERCADO_PUBLICO_TICKET`.
 - Pruebas de normalizadores, contrato HTTP, redacción de errores, límites de respuesta y utilidades del frontend; validación TypeScript.
 
@@ -92,6 +94,7 @@ El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita
 - Compra Ágil v2 sigue pendiente de validar: un HTTP 403 no demuestra por sí solo que se necesite un ticket diferente o una habilitación especial.
 - No incorpora autenticación, base de datos ni análisis documental.
 - El conteo de productos es determinista; el checklist es orientación de revisión y no un dictamen de admisibilidad.
+- Los checks son confirmaciones manuales de la persona usuaria, no verificaciones automáticas ni evidencia de que una oferta fue recibida.
 - La compatibilidad empresarial se implementará después de definir el perfil y reglas auditables.
 - La postulación oficial continúa realizándose en Mercado Público.
 

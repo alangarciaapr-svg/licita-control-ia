@@ -5,6 +5,12 @@ export function validateTenderCode(value) {
   return code;
 }
 
+export function validateAgileCode(value) {
+  const code = value.trim().toUpperCase();
+  if (!/^\d{1,12}-\d{1,12}-COT\d{2}$/.test(code)) throw new Error('Ingresa un código COT válido, copiado desde Mercado Público.');
+  return code;
+}
+
 export function validateApiUrl(value) {
   const url = new URL(value.trim());
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);

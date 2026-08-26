@@ -1,12 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { formatOfficialDate, validateTenderCode, validateApiUrl } from '../frontend/view-utils.js';
+import { formatOfficialDate, validateTenderCode, validateAgileCode, validateApiUrl } from '../frontend/view-utils.js';
 
 test('tender input is normalized and COT codes are clearly separated', () => {
   assert.equal(validateTenderCode(' 123-45-le26 '), '123-45-LE26');
   for (const invalid of ['abc', '123-45-LE26?ticket=x', '<script>', '']) assert.throws(() => validateTenderCode(invalid));
   assert.throws(() => validateTenderCode('123-45-COT26'), /Compra Ágil/);
+});
+
+test('Compra Ágil accepts only normalized COT identifiers', () => {
+  assert.equal(validateAgileCode(' 1234567-89-cot26 '), '1234567-89-COT26');
+  for (const invalid of ['123-45-LE26', 'COT26', '123-45-COT', '123-45-COT26?ticket=x']) assert.throws(() => validateAgileCode(invalid));
 });
 
 test('dates retain official wall clock values rather than inventing a time zone', () => {
@@ -28,6 +33,9 @@ test('static frontend contract: all script IDs exist, no secret field or automat
   assert.equal(new Set(ids).size, ids.length);
   for (const [, id] of js.matchAll(/byId\('([^']+)'\)/g)) assert.ok(ids.includes(id), `Missing element: ${id}`);
   assert.ok(!js.includes('/api/compra-agil'));
+  assert.ok(html.includes('id="agile-form"'));
+  assert.ok(html.includes('Cotizar en Mercado Público'));
+  assert.ok(js.includes('Postular en Mercado Público'));
   assert.ok(!html.includes('name="ticket"'));
   assert.ok(!js.includes('innerHTML'));
 });

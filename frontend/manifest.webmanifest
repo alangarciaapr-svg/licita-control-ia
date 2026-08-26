@@ -1,9 +1,9 @@
 {
-  "name": "LicitaControl IA · Consulta oficial",
+  "name": "LicitaControl IA · Prepara tu postulación",
   "short_name": "LicitaControl",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#07120f",
   "theme_color": "#0b1c17",
-  "description": "Consulta licitaciones por código con evidencia oficial de Mercado Público"
+  "description": "Prepara licitaciones y Compras Ágiles antes de enviar en Mercado Público"
 }

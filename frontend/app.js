@@ -1,4 +1,4 @@
-import { formatOfficialDate, validateTenderCode, validateApiUrl } from './view-utils.js';
+import { formatOfficialDate, validateTenderCode, validateAgileCode, validateApiUrl } from './view-utils.js';
 
 const DEFAULT_API_URL = 'https://licita-control-api.alangarcia-apr.workers.dev';
 const API_STORAGE_KEY = 'licita-control-api-url';
@@ -7,6 +7,7 @@ let apiUrl = DEFAULT_API_URL;
 try { apiUrl = validateApiUrl(localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_URL); } catch { /* Use the trusted default. */ }
 let activeRequest;
 let currentCode = '';
+let currentAgileCode = '';
 
 function setMessage(text, error = false) {
   byId('message').textContent = text;
@@ -17,6 +18,12 @@ function setMessage(text, error = false) {
 function setApiState(state, label) {
   byId('api-badge').className = `connection-badge ${state}`;
   byId('api-badge').textContent = label;
+}
+
+function setAgileMessage(text, error = false) {
+  byId('agile-message').textContent = text;
+  byId('agile-message').className = `message${error ? ' error' : ''}`;
+  byId('agile-message').hidden = !text;
 }
 
 async function requestJson(base, path, signal) {
@@ -54,6 +61,45 @@ function verification(title, detail) {
   item.append(node('i'), body);
   return item;
 }
+
+function setupChecklist(containerId, progressId, items) {
+  const container = byId(containerId);
+  const progress = byId(progressId);
+  const inputs = items.map((item, index) => {
+    const label = node('label', undefined, 'check-row');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.name = `${containerId}-${index}`;
+    const body = node('span');
+    body.append(node('strong', item.title), node('small', item.detail));
+    label.append(input, body);
+    return { label, input };
+  });
+  const refresh = () => {
+    const confirmed = inputs.filter(({ input }) => input.checked).length;
+    progress.textContent = `${confirmed} de ${inputs.length} confirmados`;
+    progress.className = `count-chip${confirmed === inputs.length ? ' complete' : ''}`;
+  };
+  for (const { input } of inputs) input.addEventListener('change', refresh);
+  container.replaceChildren(...inputs.map(({ label }) => label));
+  refresh();
+}
+
+const tenderSteps = [
+  { title: 'Estado y cierre vigentes', detail: 'Confirmé la ficha y el plazo directamente en Mercado Público.' },
+  { title: 'Bases, anexos y foro revisados', detail: 'Leí requisitos administrativos, técnicos y respuestas del organismo.' },
+  { title: 'Registro de Proveedores hábil', detail: 'Verifiqué mi estado y la información de la empresa en el portal oficial.' },
+  { title: 'Oferta técnica y documentos listos', detail: 'Preparé cada antecedente solicitado en el formato requerido.' },
+  { title: 'Oferta económica verificada', detail: 'Revisé precio, impuestos, costos, entrega y confirmé el envío en Mercado Público.' },
+];
+
+const agileSteps = [
+  { title: 'Proceso y llamado vigentes', detail: 'Busqué el código COT y confirmé estado, llamado aplicable y fecha de cierre.' },
+  { title: 'Proveedor hábil y elegible', detail: 'Verifiqué el Registro y las condiciones de participación del llamado.' },
+  { title: 'Requerimiento completo revisado', detail: 'Confirmé productos, cantidades, especificaciones, documentos y lugar de entrega.' },
+  { title: 'Cotización económica verificada', detail: 'Revisé precio, impuestos, costos, plazo de entrega y vigencia.' },
+  { title: 'Cotización enviada y confirmada', detail: 'Ingresé la cotización en Mercado Público y comprobé su recepción antes del cierre.' },
+];
 
 function renderTender(tender, meta) {
   currentCode = tender.code;
@@ -93,6 +139,11 @@ function renderTender(tender, meta) {
     return article;
   }));
   if (!tender.items.length) byId('product-list').append(node('p', 'Sin productos estructurados en esta respuesta. Revisa las bases.'));
+  setupChecklist('tender-checklist', 'tender-progress', tenderSteps);
+  const published = tender.status?.trim().toLocaleLowerCase('es-CL') === 'publicada';
+  byId('tender-official-heading').textContent = published ? 'Continúa tu postulación en Mercado Público.' : 'Revisa el estado antes de intentar postular.';
+  byId('tender-official-note').textContent = published ? 'Carga y confirma allí la oferta técnica y económica antes del cierre.' : 'La fuente no confirma que este proceso esté recibiendo ofertas. Abre la ficha oficial.';
+  byId('tender-official-link').textContent = published ? 'Postular en Mercado Público ↗' : 'Revisar ficha en Mercado Público ↗';
   byId('detalle').hidden = false;
   byId('detail-title').focus();
 }
@@ -133,10 +184,31 @@ byId('tender-form').addEventListener('submit', async (event) => {
   }
 });
 
+byId('agile-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  try {
+    const code = validateAgileCode(byId('agile-code').value);
+    byId('agile-code').value = code;
+    currentAgileCode = code;
+    byId('agile-detail-code').textContent = `Código COT ${code}`;
+    setupChecklist('agile-checklist', 'agile-progress', agileSteps);
+    byId('agile-detail').hidden = false;
+    byId('agile-detail-title').focus();
+    setAgileMessage(`Preparación iniciada para ${code}. El código fue ingresado por ti y todavía no se contrastó con API2.`);
+  } catch (error) {
+    setAgileMessage(error instanceof Error ? error.message : 'El código no es válido.', true);
+  }
+});
+
 byId('close-detail').addEventListener('click', () => { byId('detalle').hidden = true; byId('tender-code').focus(); });
 byId('copy-code').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(currentCode); setMessage('Código copiado. Búscalo en Mercado Público.'); }
   catch { setMessage('No se pudo copiar. Selecciona el código visible en la ficha.', true); }
+});
+byId('close-agile-detail').addEventListener('click', () => { byId('agile-detail').hidden = true; byId('agile-code').focus(); });
+byId('copy-agile-code').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(currentAgileCode); setAgileMessage('Código COT copiado. Búscalo en Mercado Público.'); }
+  catch { setAgileMessage('No se pudo copiar. Selecciona el código visible en la ficha.', true); }
 });
 byId('open-settings').addEventListener('click', () => { byId('api-url').value = apiUrl; byId('settings-status').textContent = ''; byId('settings-dialog').showModal(); });
 byId('settings-form').addEventListener('submit', (event) => {
