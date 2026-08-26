@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeTenderResponse } from "../src/normalize";
+import { normalizeTenderListResponse, normalizeTenderResponse } from "../src/normalize";
 
 describe("normalizeTenderResponse", () => {
   it("normaliza una licitación y sus ítems", () => {
@@ -60,5 +60,30 @@ describe("normalizeTenderResponse", () => {
     expect(result?.dates.closing).toBeNull();
     expect(result?.items).toHaveLength(1);
     expect(result?.items[0].quantity).toBeNull();
+  });
+});
+
+describe("normalizeTenderListResponse", () => {
+  it("normaliza oportunidades básicas sin inventar campos ausentes", () => {
+    const result = normalizeTenderListResponse({ Listado: [{
+      CodigoExterno: "123-45-LE26",
+      Nombre: "Equipamiento de prueba",
+      Estado: "Publicada",
+      FechaCierre: "2026-08-30T15:00:00",
+      Comprador: { NombreOrganismo: "Organismo sintético", RegionUnidad: "Región de prueba" },
+    }, {}, null] });
+    expect(result).toEqual([expect.objectContaining({
+      code: "123-45-LE26",
+      name: "Equipamiento de prueba",
+      buyer: "Organismo sintético",
+      region: "Región de prueba",
+    })]);
+    expect(result?.[0].description).toBeNull();
+  });
+
+  it("rechaza una envoltura que no sea un listado oficial", () => {
+    expect(normalizeTenderListResponse({ Listado: null })).toBeNull();
+    expect(normalizeTenderListResponse({ Codigo: "ERROR", Mensaje: "sintético", Listado: [] })).toBeNull();
+    expect(normalizeTenderListResponse(null)).toBeNull();
   });
 });

@@ -1,9 +1,9 @@
 {
-  "name": "LicitaControl IA · Prepara tu postulación",
+  "name": "LicitaControl IA · Radar automático",
   "short_name": "LicitaControl",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#07120f",
   "theme_color": "#0b1c17",
-  "description": "Prepara licitaciones y Compras Ágiles antes de enviar en Mercado Público"
+  "description": "Detecta, prioriza y prepara licitaciones automáticamente con datos oficiales de Mercado Público"
 }

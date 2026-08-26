@@ -43,7 +43,7 @@ describe('Worker v1 request contract', () => {
   it('health confirms configuration only, without contacting the upstream', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const response = await query('/health');
-    expect(await response.json()).toMatchObject({ ok: true, ticketConfigured: true, version: '0.3.0' });
+    expect(await response.json()).toMatchObject({ ok: true, ticketConfigured: true, version: '0.4.1' });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -125,6 +125,35 @@ describe('Worker v1 request contract', () => {
     const body = await response.json<{ error: { message: string } }>();
     expect(body.error.message).toContain('causa debe verificarse');
   });
+
+  it('lists published opportunities for one validated day without leaking the ticket', async () => {
+    const ticket = crypto.randomUUID();
+    const date = new Date().toISOString().slice(0, 10);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ Listado: [{
+      CodigoExterno: code,
+      Nombre: 'Servicio sintético',
+      Estado: 'Publicada',
+      FechaCierre: '2026-09-01T15:00:00',
+    }] }));
+    const response = await query(`/api/oportunidades?fecha=${date}`, 'GET', ticket);
+    expect(response.status).toBe(200);
+    const body = await response.json<{ data: { items: Array<{ code: string }> }; meta: { source: string } }>();
+    expect(body.data.items).toEqual([expect.objectContaining({ code })]);
+    expect(body.meta.source).toContain('v1');
+    expect(JSON.stringify(body)).not.toContain(ticket);
+    const upstream = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(upstream.searchParams.get('estado')).toBe('publicada');
+    expect(upstream.searchParams.get('ticket')).toBe(ticket);
+  });
+
+  it.each(['', '2026-02-30', '01-01-2026', '2999-01-01'])(
+    'rejects invalid radar dates without contacting upstream: %s', async (date) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      const response = await query(`/api/oportunidades?fecha=${encodeURIComponent(date)}`);
+      expect(response.status).toBe(400);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('bounded JSON reader', () => {

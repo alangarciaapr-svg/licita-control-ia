@@ -32,6 +32,17 @@ export interface NormalizedTender {
   type: string | null;
 }
 
+export interface NormalizedOpportunity {
+  buyer: string | null;
+  closing: string | null;
+  code: string;
+  description: string | null;
+  name: string | null;
+  region: string | null;
+  status: string | null;
+  type: string | null;
+}
+
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -113,4 +124,26 @@ export function normalizeTenderResponse(payload: unknown, requestedCode: string)
     status: stringAt(first, "Estado"),
     type: stringAt(first, "Tipo"),
   };
+}
+
+export function normalizeTenderListResponse(payload: unknown): NormalizedOpportunity[] | null {
+  if (!isRecord(payload) || "Codigo" in payload || "Mensaje" in payload || !Array.isArray(payload.Listado)) return null;
+
+  return payload.Listado.flatMap((value): NormalizedOpportunity[] => {
+    if (!isRecord(value)) return [];
+    const code = stringAt(value, "CodigoExterno")?.toUpperCase();
+    if (!code) return [];
+    const buyer = recordAt(value, "Comprador");
+    const dates = recordAt(value, "Fechas");
+    return [{
+      buyer: stringAt(buyer, "NombreOrganismo"),
+      closing: stringAt(value, "FechaCierre") || stringAt(dates, "FechaCierre"),
+      code,
+      description: stringAt(value, "Descripcion"),
+      name: stringAt(value, "Nombre"),
+      region: stringAt(buyer, "RegionUnidad"),
+      status: stringAt(value, "Estado"),
+      type: stringAt(value, "Tipo"),
+    }];
+  });
 }

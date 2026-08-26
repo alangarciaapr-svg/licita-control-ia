@@ -1,4 +1,4 @@
-import { normalizeTenderResponse } from "./normalize";
+import { normalizeTenderListResponse, normalizeTenderResponse } from "./normalize";
 import { readBoundedJson, UpstreamBodyError } from "./upstream";
 import {
   normalizeCompraAgilDetailResponse,
@@ -6,7 +6,7 @@ import {
 } from "./normalizeCompraAgil";
 
 const SERVICE_NAME = "LicitaControl IA API";
-const VERSION = "0.3.0";
+const VERSION = "0.4.1";
 const TENDER_CODE_PATTERN = /^\d{1,12}-\d{1,12}-[A-Z][A-Z0-9]{0,3}\d{2}$/;
 const COMPRA_AGIL_CODE_PATTERN = /^\d+-\d+-COT\d{2}$/;
 
@@ -261,6 +261,80 @@ async function fetchTender(request: Request, env: Env, requestId: string, code: 
   return jsonResponse(request, { data: tender, meta: { requestId, source: "Dirección ChileCompra · API Mercado Público v1", retrievedAt: new Date().toISOString() } });
 }
 
+async function fetchPublishedOpportunities(request: Request, env: Env, requestId: string, url: URL): Promise<Response> {
+  const dateValue = (url.searchParams.get("fecha") || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return errorResponse(request, requestId, 400, "INVALID_DATE", "La fecha debe usar el formato AAAA-MM-DD.");
+  }
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const requestedDate = new Date(Date.UTC(year, month - 1, day));
+  if (requestedDate.getUTCFullYear() !== year || requestedDate.getUTCMonth() !== month - 1 || requestedDate.getUTCDate() !== day) {
+    return errorResponse(request, requestId, 400, "INVALID_DATE", "La fecha indicada no existe.");
+  }
+  const today = new Date();
+  const currentDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const ageInDays = Math.floor((currentDate - requestedDate.getTime()) / 86_400_000);
+  if (ageInDays < 0 || ageInDays > 31) {
+    return errorResponse(request, requestId, 400, "DATE_OUT_OF_RANGE", "El radar permite revisar hoy y los últimos 31 días.");
+  }
+  if (!env.MERCADO_PUBLICO_TICKET) {
+    return errorResponse(request, requestId, 503, "TICKET_NOT_CONFIGURED", "La integración aún no está configurada.");
+  }
+
+  const upstreamUrl = new URL(`${env.MERCADO_PUBLICO_BASE_URL.replace(/\/$/, "")}/licitaciones.json`);
+  upstreamUrl.searchParams.set("fecha", `${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${year}`);
+  upstreamUrl.searchParams.set("estado", "publicada");
+  upstreamUrl.searchParams.set("ticket", env.MERCADO_PUBLICO_TICKET);
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(upstreamUrl, {
+      headers: { Accept: "application/json" },
+      redirect: "manual",
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    console.error(JSON.stringify({ event: "opportunity_radar_request_failed", requestId }));
+    return errorResponse(request, requestId, 502, "UPSTREAM_UNAVAILABLE", "Mercado Público no está disponible temporalmente.");
+  }
+  if (!upstream.ok) {
+    console.error(JSON.stringify({ event: "opportunity_radar_bad_status", requestId, status: upstream.status }));
+    if (upstream.status === 401 || upstream.status === 403) {
+      return errorResponse(request, requestId, 503, "UPSTREAM_ACCESS_DENIED", "La fuente oficial rechazó el acceso al radar.");
+    }
+    if (upstream.status === 429) {
+      return errorResponse(request, requestId, 429, "UPSTREAM_RATE_LIMIT", "Mercado Público alcanzó temporalmente su límite de consultas.");
+    }
+    return errorResponse(request, requestId, 502, "UPSTREAM_ERROR", "Mercado Público rechazó la consulta del radar.");
+  }
+
+  let payload: unknown;
+  try {
+    payload = await readBoundedJson(upstream);
+  } catch (error) {
+    if (error instanceof UpstreamBodyError && error.code === "UPSTREAM_RESPONSE_TOO_LARGE") {
+      return errorResponse(request, requestId, 502, error.code, "La respuesta del radar es demasiado grande.");
+    }
+    return errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "Mercado Público devolvió una respuesta inválida.");
+  }
+  const opportunities = normalizeTenderListResponse(payload);
+  if (!opportunities) {
+    return errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "La fuente oficial no devolvió un listado válido.");
+  }
+  const limited = opportunities.slice(0, 500);
+  console.log(JSON.stringify({ event: "opportunity_radar_loaded", requestId, resultCount: limited.length, date: dateValue }));
+  return jsonResponse(request, {
+    data: { date: dateValue, items: limited },
+    meta: {
+      requestId,
+      source: "Dirección ChileCompra · API Mercado Público v1",
+      retrievedAt: new Date().toISOString(),
+      totalOfficialResults: opportunities.length,
+      truncated: opportunities.length > limited.length,
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const requestId = crypto.randomUUID();
@@ -290,6 +364,10 @@ export default {
         try { code = decodeURIComponent(match[1]).trim().toUpperCase(); }
         catch { return errorResponse(request, requestId, 400, "INVALID_TENDER_CODE", "El código de licitación no es válido."); }
         return await fetchTender(request, env, requestId, code);
+      }
+
+      if (url.pathname === "/api/oportunidades") {
+        return await fetchPublishedOpportunities(request, env, requestId, url);
       }
 
       if (url.pathname === "/api/compra-agil") {

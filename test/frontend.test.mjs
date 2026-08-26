@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { formatOfficialDate, validateTenderCode, validateAgileCode, validateApiUrl } from '../frontend/view-utils.js';
+import { buildCommercialProfile, formatOfficialDate, scoreOpportunity, validateTenderCode, validateAgileCode, validateApiUrl } from '../frontend/view-utils.js';
 
 test('tender input is normalized and COT codes are clearly separated', () => {
   assert.equal(validateTenderCode(' 123-45-le26 '), '123-45-LE26');
@@ -26,6 +26,18 @@ test('connection setting rejects credentials, query parameters and insecure remo
   for (const invalid of ['https://example.com/?ticket=x', 'https://user:pass@example.com', 'http://example.com', 'javascript:alert(1)', 'https://example.com/api']) assert.throws(() => validateApiUrl(invalid));
 });
 
+test('radar matching is deterministic, explainable and respects exclusions and lead time', () => {
+  const profile = buildCommercialProfile('software, soporte informático', 'arriendo', 'Metropolitana', '3');
+  const opportunity = { name: 'Servicio de soporte informático y software', description: null, buyer: 'Organismo sintético', region: 'Región Metropolitana', status: 'Publicada', closing: '2026-08-31T15:00:00' };
+  const match = scoreOpportunity(opportunity, profile, '2026-08-26');
+  assert.deepEqual({ eligible: match.eligible, score: match.score, matchedKeywords: match.matchedKeywords, daysRemaining: match.daysRemaining }, { eligible: true, score: 80, matchedKeywords: ['software', 'soporte informático'], daysRemaining: 5 });
+  const excluded = scoreOpportunity({ ...opportunity, name: 'Arriendo de software' }, profile, '2026-08-26');
+  assert.deepEqual({ eligible: excluded.eligible, score: excluded.score, matchedExclusions: excluded.matchedExclusions }, { eligible: false, score: 0, matchedExclusions: ['arriendo'] });
+  const late = scoreOpportunity({ ...opportunity, closing: '2026-08-27T15:00:00' }, profile, '2026-08-26');
+  assert.deepEqual({ eligible: late.eligible, score: late.score, daysRemaining: late.daysRemaining }, { eligible: false, score: 0, daysRemaining: 1 });
+  assert.throws(() => buildCommercialProfile('', '', '', '3'));
+});
+
 test('static frontend contract: all script IDs exist, no secret field or automatic v2 query', () => {
   const html = readFileSync(new URL('../frontend/index.html', import.meta.url), 'utf8');
   const js = readFileSync(new URL('../frontend/app.js', import.meta.url), 'utf8');
@@ -34,6 +46,8 @@ test('static frontend contract: all script IDs exist, no secret field or automat
   for (const [, id] of js.matchAll(/byId\('([^']+)'\)/g)) assert.ok(ids.includes(id), `Missing element: ${id}`);
   assert.ok(!js.includes('/api/compra-agil'));
   assert.ok(html.includes('id="agile-form"'));
+  assert.ok(html.includes('id="radar-form"'));
+  assert.ok(js.includes('/api/oportunidades?fecha='));
   assert.ok(html.includes('Cotizar en Mercado Público'));
   assert.ok(js.includes('Postular en Mercado Público'));
   assert.ok(!html.includes('name="ticket"'));

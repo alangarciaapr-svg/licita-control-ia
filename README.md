@@ -1,6 +1,6 @@
 # LicitaControl IA
 
-LicitaControl IA ayuda a preparar la participación en licitaciones y Compras Ágiles. No sustituye el sistema transaccional: la oferta técnica/económica o cotización se envía y confirma exclusivamente en Mercado Público.
+LicitaControl IA automatiza la detección y preparación de oportunidades para proveedores del Estado. Consulta las licitaciones publicadas, las contrasta con un perfil comercial mediante reglas deterministas y crea una cola priorizada para abrir su expediente. No sustituye el sistema transaccional: la oferta técnica/económica o cotización se envía y confirma exclusivamente en Mercado Público.
 
 ## Estado actual
 
@@ -10,10 +10,13 @@ Este repositorio contiene el primer MVP reconstruido:
 - Entrada raíz `index.html` que dirige a la PWA.
 - Cloudflare Worker en `worker/`.
 - `GET /health` para comprobar la configuración.
+- `GET /api/oportunidades?fecha=AAAA-MM-DD` lista las licitaciones publicadas de un día de los últimos 31 días mediante API v1.
 - `GET /api/licitacion/{codigo}` es el flujo principal: código oficial → ficha normalizada → frontend.
 - `GET /api/compra-agil` y `GET /api/compra-agil/{codigo}` se conservan en el Worker, pendientes de validación real de acceso v2. El frontend no los consulta automáticamente.
 - La ruta Compra Ágil acepta un código COT ingresado por la persona usuaria y genera un checklist manual. No presenta ese código ni sus datos como verificados mientras API2 no esté validada.
 - Las dos rutas terminan con una continuación explícita a Mercado Público; la aplicación no maneja credenciales de proveedor ni envía ofertas.
+- El perfil comercial (palabras clave, exclusiones, regiones preferidas y plazo mínimo) queda solo en `localStorage`. Al abrir la aplicación se ejecuta automáticamente el radar del día.
+- El puntaje se calcula en código: coincidencias positivas, región informada, plazo y estado. Las exclusiones y un plazo insuficiente descartan la oportunidad; cada coincidencia visible explica sus señales.
 - Ticket de Mercado Público aislado en el secreto `MERCADO_PUBLICO_TICKET`.
 - Pruebas de normalizadores, contrato HTTP, redacción de errores, límites de respuesta y utilidades del frontend; validación TypeScript.
 
@@ -92,6 +95,7 @@ El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita
 
 - Consulta individual de licitaciones v1; no incluye todavía listados automáticos ni historial de órdenes AG.
 - Compra Ágil v2 sigue pendiente de validar: un HTTP 403 no demuestra por sí solo que se necesite un ticket diferente o una habilitación especial.
+- El radar automático actual cubre licitaciones v1. No es todavía un servicio en segundo plano ni envía notificaciones cuando el navegador está cerrado.
 - No incorpora autenticación, base de datos ni análisis documental.
 - El conteo de productos es determinista; el checklist es orientación de revisión y no un dictamen de admisibilidad.
 - Los checks son confirmaciones manuales de la persona usuaria, no verificaciones automáticas ni evidencia de que una oferta fue recibida.

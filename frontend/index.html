@@ -4,17 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#071712" />
-    <meta name="description" content="Prepara tu participación en licitaciones y Compras Ágiles con evidencia, checklists y continuación segura a Mercado Público." />
+    <meta name="description" content="Radar automático de licitaciones: detecta oportunidades, explica coincidencias y prepara una cola de postulación con datos oficiales." />
     <meta property="og:title" content="LicitaControl IA" />
-    <meta property="og:description" content="Prepara licitaciones y Compras Ágiles. Verifica antes de ofertar en Mercado Público." />
+    <meta property="og:description" content="Detecta, prioriza y prepara licitaciones automáticamente con datos oficiales de Mercado Público." />
     <meta property="og:image" content="https://licita-control-ia.pages.dev/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LicitaControl IA" />
-    <meta name="twitter:description" content="Prepara licitaciones y Compras Ágiles. Verifica antes de ofertar en Mercado Público." />
+    <meta name="twitter:description" content="Detecta, prioriza y prepara licitaciones automáticamente con datos oficiales de Mercado Público." />
     <meta name="twitter:image" content="https://licita-control-ia.pages.dev/og.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>LicitaControl IA · Prepara tu postulación</title>
+    <title>LicitaControl IA · Radar automático de licitaciones</title>
   </head>
   <body>
     <div class="app-shell">
@@ -24,32 +24,48 @@
         </a>
         <nav class="nav" aria-label="Navegación principal">
           <a class="active" href="#inicio"><span>01</span> Inicio</a>
-          <a href="#procesos"><span>02</span> Elegir proceso</a>
-          <a href="#metodo"><span>03</span> Preparar oferta</a>
+          <a href="#radar"><span>02</span> Radar automático</a>
+          <a href="#procesos"><span>03</span> Preparar oferta</a>
         </nav>
-        <div class="sidebar-note"><div><strong>2 rutas de preparación</strong><small>Envío final en Mercado Público</small></div></div>
+        <div class="sidebar-note"><div><strong>Radar v1 activo</strong><small>Matching auditable, sin caja negra</small></div></div>
       </aside>
       <main>
         <header class="topbar">
-          <div><span class="eyebrow">ESPACIO DE PREPARACIÓN PARA PROVEEDORES</span><h1>Postula con control.</h1></div>
+          <div><span class="eyebrow">AUTOMATIZACIÓN COMERCIAL PARA PROVEEDORES</span><h1>Encuentra antes. Postula mejor.</h1></div>
           <button id="open-settings" class="ghost-button" type="button">Conexión API</button>
         </header>
         <section id="inicio" class="hero-panel">
           <div class="hero-copy">
-            <span class="pill">LICITACIONES + COMPRA ÁGIL</span>
-            <h2>Prepara aquí.<br />Envía en el canal oficial.</h2>
-            <p>Organiza la revisión previa de una licitación o una Compra Ágil, confirma requisitos y continúa a Mercado Público para enviar tu oferta o cotización.</p>
-            <a class="primary-button hero-action" href="#procesos">Elegir tipo de proceso</a>
+            <span class="pill">RADAR AUTOMÁTICO · DATOS OFICIALES</span>
+            <h2>Deja de buscar.<br />Empieza a decidir.</h2>
+            <p>Define lo que vende tu empresa. LicitaControl detecta las licitaciones publicadas del día, explica por qué coinciden y crea una cola para preparar su postulación.</p>
+            <a class="primary-button hero-action" href="#radar">Configurar mi radar</a>
           </div>
           <div class="decision-dial" aria-label="Apoyo a la revisión, no recomendación automática">
-            <span>TU SIGUIENTE PASO</span><strong>PREPARAR</strong><small>VERIFICAR · ADJUNTAR · ENVIAR</small><div class="dial-ring"></div>
+            <span>MOTOR DE OPORTUNIDADES</span><strong>DETECTAR</strong><small>FILTRAR · PRIORIZAR · PREPARAR</small><div class="dial-ring"></div>
           </div>
         </section>
         <section class="metrics" aria-label="Alcance de esta versión">
           <article><span>Fuente</span><strong>ChileCompra</strong><small>Datos oficiales consultados</small></article>
-          <article><span>Procesos</span><strong>Dos rutas</strong><small>Licitación y Compra Ágil</small></article>
-          <article><span>Requisito común</span><strong>Proveedor hábil</strong><small>Debes confirmarlo en el Registro</small></article>
-          <article><span>Presentación</span><strong>Mercado Público</strong><small>Canal oficial de ofertas</small></article>
+          <article><span>Detección</span><strong>Publicadas hoy</strong><small>Listado oficial por fecha y estado</small></article>
+          <article><span>Priorización</span><strong>100% explicable</strong><small>Reglas deterministas de tu perfil</small></article>
+          <article><span>Resultado</span><strong>Cola de postulación</strong><small>Abre la ficha y prepara la oferta</small></article>
+        </section>
+        <section id="radar" class="workspace-card">
+          <div class="section-heading"><div><span class="eyebrow">CENTRO DE AUTOMATIZACIÓN</span><h2>Tu radar de oportunidades</h2></div><span id="radar-badge" class="connection-badge neutral">Perfil no configurado</span></div>
+          <form id="radar-form" class="profile-form">
+            <div class="field-group wide"><label for="radar-keywords">¿Qué vende tu empresa?</label><input id="radar-keywords" type="text" placeholder="Ej. software, soporte informático, desarrollo web" maxlength="300" required /><small>Separa palabras o frases con comas.</small></div>
+            <div class="field-group"><label for="radar-exclusions">Excluir oportunidades</label><input id="radar-exclusions" type="text" placeholder="Ej. arriendo, obras civiles" maxlength="300" /><small>Términos que descartan una coincidencia.</small></div>
+            <div class="field-group"><label for="radar-regions">Regiones preferidas</label><input id="radar-regions" type="text" placeholder="Ej. Metropolitana, Valparaíso" maxlength="300" /><small>Suman prioridad si la fuente informa región.</small></div>
+            <div class="field-group"><label for="radar-min-days">Plazo mínimo para preparar</label><input id="radar-min-days" type="number" min="0" max="90" value="3" required /><small>Días mínimos antes del cierre.</small></div>
+            <div class="profile-actions"><button id="radar-button" class="primary-button" type="submit">Guardar y detectar ahora</button><button id="radar-refresh" class="ghost-button" type="button">Actualizar oportunidades</button></div>
+          </form>
+          <div id="radar-message" class="message" role="status" aria-live="polite" hidden></div>
+          <div id="radar-results" class="radar-results" hidden>
+            <div class="results-summary"><div><strong id="radar-summary">0 oportunidades priorizadas</strong><span id="radar-source"></span></div><span id="radar-date" class="count-chip"></span></div>
+            <div id="opportunity-list" class="opportunity-list"></div>
+          </div>
+          <p class="method-note">El perfil queda guardado únicamente en este navegador. Al volver a abrir la app, el radar ejecuta una nueva detección del día.</p>
         </section>
         <section id="procesos" class="workspace-card">
           <div class="section-heading"><div><span class="eyebrow">ELIGE TU RUTA</span><h2>¿Qué quieres preparar?</h2></div></div>

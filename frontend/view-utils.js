@@ -25,3 +25,49 @@ export function formatOfficialDate(value) {
   if (!match) return String(value);
   return `${match[3]}/${match[2]}/${match[1]} · ${match[4]}:${match[5]}:${match[6]}${match[7] ? ` (${match[7]})` : ''}`;
 }
+
+function normalizeSearchText(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-CL');
+}
+
+function splitTerms(value) {
+  return [...new Set(String(value || '').split(',').map((term) => term.trim()).filter(Boolean))].slice(0, 20);
+}
+
+export function buildCommercialProfile(keywordsValue, exclusionsValue, regionsValue, minimumLeadDaysValue) {
+  const keywords = splitTerms(keywordsValue);
+  if (!keywords.length) throw new Error('Agrega al menos una palabra o frase que describa lo que vende tu empresa.');
+  const minimumLeadDays = Number(minimumLeadDaysValue);
+  if (!Number.isInteger(minimumLeadDays) || minimumLeadDays < 0 || minimumLeadDays > 90) throw new Error('El plazo mínimo debe ser un número entre 0 y 90 días.');
+  return {
+    keywords,
+    exclusions: splitTerms(exclusionsValue),
+    regions: splitTerms(regionsValue),
+    minimumLeadDays,
+  };
+}
+
+function daysBetween(dateValue, referenceDate) {
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateValue || ''));
+  const referenceMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(referenceDate);
+  if (!dateMatch || !referenceMatch) return null;
+  const toUtc = (parts) => Date.UTC(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+  return Math.ceil((toUtc(dateMatch) - toUtc(referenceMatch)) / 86400000);
+}
+
+export function scoreOpportunity(opportunity, profile, referenceDate) {
+  const searchable = normalizeSearchText([opportunity.name, opportunity.description, opportunity.buyer, opportunity.type].filter(Boolean).join(' '));
+  const matchedKeywords = profile.keywords.filter((term) => searchable.includes(normalizeSearchText(term)));
+  const matchedExclusions = profile.exclusions.filter((term) => searchable.includes(normalizeSearchText(term)));
+  const regionText = normalizeSearchText(opportunity.region);
+  const matchedRegions = profile.regions.filter((term) => regionText.includes(normalizeSearchText(term)));
+  const daysRemaining = daysBetween(opportunity.closing, referenceDate);
+  const insufficientTime = daysRemaining !== null && daysRemaining < profile.minimumLeadDays;
+  const eligible = matchedKeywords.length > 0 && matchedExclusions.length === 0 && !insufficientTime;
+  const score = eligible ? Math.min(100,
+    Math.min(70, matchedKeywords.length * 25)
+      + (matchedRegions.length ? 15 : 0)
+      + (daysRemaining !== null && daysRemaining >= profile.minimumLeadDays ? 10 : 0)
+      + (normalizeSearchText(opportunity.status) === 'publicada' ? 5 : 0)) : 0;
+  return { daysRemaining, eligible, matchedExclusions, matchedKeywords, matchedRegions, score };
+}

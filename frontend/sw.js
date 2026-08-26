@@ -1,4 +1,4 @@
-const CACHE_NAME = "licita-control-v5";
+const CACHE_NAME = "licita-control-v6";
 const APP_SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./view-utils.js", "./manifest.webmanifest", "./og.png"];
 
 self.addEventListener("install", (event) => {

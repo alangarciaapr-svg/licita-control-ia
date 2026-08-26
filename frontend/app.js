@@ -1,11 +1,13 @@
-import { formatOfficialDate, validateTenderCode, validateAgileCode, validateApiUrl } from './view-utils.js';
+import { buildCommercialProfile, formatOfficialDate, scoreOpportunity, validateTenderCode, validateAgileCode, validateApiUrl } from './view-utils.js';
 
 const DEFAULT_API_URL = 'https://licita-control-api.alangarcia-apr.workers.dev';
 const API_STORAGE_KEY = 'licita-control-api-url';
+const RADAR_PROFILE_STORAGE_KEY = 'licita-control-radar-profile-v1';
 const byId = (id) => document.getElementById(id);
 let apiUrl = DEFAULT_API_URL;
 try { apiUrl = validateApiUrl(localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_URL); } catch { /* Use the trusted default. */ }
 let activeRequest;
+let radarRequest;
 let currentCode = '';
 let currentAgileCode = '';
 
@@ -24,6 +26,12 @@ function setAgileMessage(text, error = false) {
   byId('agile-message').textContent = text;
   byId('agile-message').className = `message${error ? ' error' : ''}`;
   byId('agile-message').hidden = !text;
+}
+
+function setRadarMessage(text, error = false) {
+  byId('radar-message').textContent = text;
+  byId('radar-message').className = `message${error ? ' error' : ''}`;
+  byId('radar-message').hidden = !text;
 }
 
 async function requestJson(base, path, signal) {
@@ -46,6 +54,83 @@ function node(tag, text, className) {
   if (text !== undefined) element.textContent = text;
   if (className) element.className = className;
   return element;
+}
+
+function localDateValue(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function renderOpportunities(items, profile, payload) {
+  const referenceDate = payload.data.date;
+  const ranked = items
+    .map((opportunity) => ({ opportunity, match: scoreOpportunity(opportunity, profile, referenceDate) }))
+    .filter(({ match }) => match.eligible)
+    .sort((left, right) => right.match.score - left.match.score || (left.match.daysRemaining ?? 999) - (right.match.daysRemaining ?? 999));
+
+  const cards = ranked.slice(0, 40).map(({ opportunity, match }) => {
+    const article = node('article', undefined, 'opportunity');
+    const top = node('div', undefined, 'opportunity-top');
+    const identity = node('div');
+    identity.append(node('span', opportunity.code, 'opportunity-code'), node('h3', opportunity.name || 'Nombre no informado'));
+    const score = node('span', undefined, 'match-score');
+    score.append(node('strong', String(match.score)), document.createTextNode('/100'));
+    top.append(identity, score);
+    const signals = node('div', undefined, 'signal-row');
+    for (const keyword of match.matchedKeywords) signals.append(node('span', `Coincide: ${keyword}`, 'signal'));
+    for (const region of match.matchedRegions) signals.append(node('span', `Región: ${region}`, 'signal'));
+    if (match.daysRemaining !== null) signals.append(node('span', `${match.daysRemaining} días hasta cierre`, 'signal'));
+    const footer = node('div', undefined, 'opportunity-footer');
+    const source = node('p', opportunity.buyer || 'Organismo no informado en el listado', 'opportunity-buyer');
+    const button = node('button', 'Crear expediente →', 'view-button');
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      byId('tender-code').value = opportunity.code;
+      byId('tender-form').requestSubmit();
+    });
+    footer.append(source, button);
+    article.append(top, signals, footer);
+    return article;
+  });
+
+  byId('opportunity-list').replaceChildren(...cards);
+  if (!cards.length) byId('opportunity-list').append(node('p', 'No hubo coincidencias con las reglas actuales. Ajusta tu perfil o vuelve a actualizar más tarde.', 'message'));
+  byId('radar-summary').textContent = `${ranked.length} de ${items.length} oportunidades coinciden`;
+  byId('radar-source').textContent = `Cálculo determinista · ${profile.keywords.length} términos activos · máximo 40 resultados visibles`;
+  byId('radar-date').textContent = referenceDate;
+  byId('radar-results').hidden = false;
+  byId('radar-badge').className = 'connection-badge connected';
+  byId('radar-badge').textContent = `${ranked.length} priorizadas`;
+}
+
+async function runRadar(profile, automatic = false) {
+  radarRequest?.abort();
+  const controller = new AbortController();
+  radarRequest = controller;
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  byId('radar-button').disabled = true;
+  byId('radar-refresh').disabled = true;
+  byId('radar-badge').className = 'connection-badge neutral';
+  byId('radar-badge').textContent = 'Detectando…';
+  setRadarMessage(automatic ? 'Perfil recuperado. Buscando las oportunidades publicadas hoy…' : 'Consultando oportunidades oficiales publicadas hoy…');
+  try {
+    const date = localDateValue();
+    const payload = await requestJson(apiUrl, `/api/oportunidades?fecha=${encodeURIComponent(date)}`, controller.signal);
+    if (radarRequest !== controller) return;
+    if (payload.data?.date !== date || !Array.isArray(payload.data.items) || !Number.isFinite(Date.parse(payload.meta?.retrievedAt))) throw new Error('El radar recibió una respuesta incompleta o incompatible.');
+    renderOpportunities(payload.data.items, profile, payload);
+    setRadarMessage(`Radar actualizado: se revisaron ${payload.data.items.length} licitaciones publicadas el ${date}.`);
+  } catch (error) {
+    if (radarRequest !== controller) return;
+    byId('radar-badge').className = 'connection-badge disconnected';
+    byId('radar-badge').textContent = 'Radar no actualizado';
+    setRadarMessage(controller.signal.aborted ? 'El radar tardó demasiado. Intenta nuevamente.' : error instanceof Error ? error.message : 'No fue posible ejecutar el radar.', true);
+  } finally {
+    clearTimeout(timeout);
+    if (radarRequest === controller) {
+      byId('radar-button').disabled = false;
+      byId('radar-refresh').disabled = false;
+    }
+  }
 }
 
 function fact(label, value) {
@@ -148,6 +233,31 @@ function renderTender(tender, meta) {
   byId('detail-title').focus();
 }
 
+function profileFromForm() {
+  return buildCommercialProfile(
+    byId('radar-keywords').value,
+    byId('radar-exclusions').value,
+    byId('radar-regions').value,
+    byId('radar-min-days').value,
+  );
+}
+
+byId('radar-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  try {
+    const profile = profileFromForm();
+    try { localStorage.setItem(RADAR_PROFILE_STORAGE_KEY, JSON.stringify(profile)); } catch { /* Radar still works for this session. */ }
+    void runRadar(profile);
+  } catch (error) {
+    setRadarMessage(error instanceof Error ? error.message : 'El perfil comercial no es válido.', true);
+  }
+});
+
+byId('radar-refresh').addEventListener('click', () => {
+  try { void runRadar(profileFromForm()); }
+  catch (error) { setRadarMessage(error instanceof Error ? error.message : 'El perfil comercial no es válido.', true); }
+});
+
 byId('tender-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   activeRequest?.abort();
@@ -244,3 +354,17 @@ const initialApiUrl = apiUrl;
 void testServer(initialApiUrl).then(() => {
   if (!activeRequest && apiUrl === initialApiUrl) setApiState('neutral', 'Servidor disponible · consulta pendiente');
 }).catch(() => { if (!activeRequest && apiUrl === initialApiUrl) setApiState('disconnected', 'Servidor no verificado · intenta consultar'); });
+
+try {
+  const stored = JSON.parse(localStorage.getItem(RADAR_PROFILE_STORAGE_KEY) || 'null');
+  if (stored && Array.isArray(stored.keywords) && stored.keywords.length) {
+    const profile = buildCommercialProfile(stored.keywords.join(', '), Array.isArray(stored.exclusions) ? stored.exclusions.join(', ') : '', Array.isArray(stored.regions) ? stored.regions.join(', ') : '', stored.minimumLeadDays ?? 3);
+    byId('radar-keywords').value = profile.keywords.join(', ');
+    byId('radar-exclusions').value = profile.exclusions.join(', ');
+    byId('radar-regions').value = profile.regions.join(', ');
+    byId('radar-min-days').value = String(profile.minimumLeadDays);
+    void runRadar(profile, true);
+  }
+} catch {
+  try { localStorage.removeItem(RADAR_PROFILE_STORAGE_KEY); } catch { /* Storage can be unavailable. */ }
+}
