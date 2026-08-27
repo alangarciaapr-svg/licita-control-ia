@@ -6,7 +6,7 @@ import {
 } from "./normalizeCompraAgil";
 
 const SERVICE_NAME = "LicitaControl IA API";
-const VERSION = "0.4.1";
+const VERSION = "0.5.0";
 const TENDER_CODE_PATTERN = /^\d{1,12}-\d{1,12}-[A-Z][A-Z0-9]{0,3}\d{2}$/;
 const COMPRA_AGIL_CODE_PATTERN = /^\d+-\d+-COT\d{2}$/;
 
@@ -262,75 +262,131 @@ async function fetchTender(request: Request, env: Env, requestId: string, code: 
 }
 
 async function fetchPublishedOpportunities(request: Request, env: Env, requestId: string, url: URL): Promise<Response> {
+  const scope = (url.searchParams.get("alcance") || "").trim();
   const dateValue = (url.searchParams.get("fecha") || "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+  const activeScope = scope === "activas";
+  const recentScope = scope === "recientes";
+  if (scope && !activeScope && !recentScope) {
+    return errorResponse(request, requestId, 400, "INVALID_SCOPE", "El alcance solicitado no es válido.");
+  }
+  const daysRaw = (url.searchParams.get("dias") || "10").trim();
+  const daysRequested = Number(daysRaw);
+  if (recentScope && (!Number.isInteger(daysRequested) || daysRequested < 1 || daysRequested > 14)) {
+    return errorResponse(request, requestId, 400, "INVALID_DAYS", "La ventana debe estar entre 1 y 14 días.");
+  }
+  if (!activeScope && !recentScope && !/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
     return errorResponse(request, requestId, 400, "INVALID_DATE", "La fecha debe usar el formato AAAA-MM-DD.");
   }
-  const [year, month, day] = dateValue.split("-").map(Number);
-  const requestedDate = new Date(Date.UTC(year, month - 1, day));
-  if (requestedDate.getUTCFullYear() !== year || requestedDate.getUTCMonth() !== month - 1 || requestedDate.getUTCDate() !== day) {
-    return errorResponse(request, requestId, 400, "INVALID_DATE", "La fecha indicada no existe.");
-  }
-  const today = new Date();
-  const currentDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-  const ageInDays = Math.floor((currentDate - requestedDate.getTime()) / 86_400_000);
-  if (ageInDays < 0 || ageInDays > 31) {
-    return errorResponse(request, requestId, 400, "DATE_OUT_OF_RANGE", "El radar permite revisar hoy y los últimos 31 días.");
+  let year = 0;
+  let month = 0;
+  let day = 0;
+  if (!activeScope && !recentScope) {
+    [year, month, day] = dateValue.split("-").map(Number);
+    const requestedDate = new Date(Date.UTC(year, month - 1, day));
+    if (requestedDate.getUTCFullYear() !== year || requestedDate.getUTCMonth() !== month - 1 || requestedDate.getUTCDate() !== day) {
+      return errorResponse(request, requestId, 400, "INVALID_DATE", "La fecha indicada no existe.");
+    }
+    const today = new Date();
+    const currentDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    const ageInDays = Math.floor((currentDate - requestedDate.getTime()) / 86_400_000);
+    if (ageInDays < 0 || ageInDays > 31) {
+      return errorResponse(request, requestId, 400, "DATE_OUT_OF_RANGE", "El radar permite revisar hoy y los últimos 31 días.");
+    }
   }
   if (!env.MERCADO_PUBLICO_TICKET) {
     return errorResponse(request, requestId, 503, "TICKET_NOT_CONFIGURED", "La integración aún no está configurada.");
   }
 
-  const upstreamUrl = new URL(`${env.MERCADO_PUBLICO_BASE_URL.replace(/\/$/, "")}/licitaciones.json`);
-  upstreamUrl.searchParams.set("fecha", `${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${year}`);
-  upstreamUrl.searchParams.set("estado", "publicada");
-  upstreamUrl.searchParams.set("ticket", env.MERCADO_PUBLICO_TICKET);
-
-  let upstream: Response;
-  try {
-    upstream = await fetch(upstreamUrl, {
-      headers: { Accept: "application/json" },
-      redirect: "manual",
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch {
-    console.error(JSON.stringify({ event: "opportunity_radar_request_failed", requestId }));
-    return errorResponse(request, requestId, 502, "UPSTREAM_UNAVAILABLE", "Mercado Público no está disponible temporalmente.");
-  }
-  if (!upstream.ok) {
-    console.error(JSON.stringify({ event: "opportunity_radar_bad_status", requestId, status: upstream.status }));
-    if (upstream.status === 401 || upstream.status === 403) {
-      return errorResponse(request, requestId, 503, "UPSTREAM_ACCESS_DENIED", "La fuente oficial rechazó el acceso al radar.");
+  const dateQueries: Array<{ iso: string | null; upstream: string | null }> = [];
+  if (recentScope) {
+    const chileDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const [currentYear, currentMonth, currentDay] = chileDate.split("-").map(Number);
+    const cursor = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay));
+    for (let offset = 0; offset < daysRequested; offset += 1) {
+      const iso = cursor.toISOString().slice(0, 10);
+      dateQueries.push({ iso, upstream: `${iso.slice(8, 10)}${iso.slice(5, 7)}${iso.slice(0, 4)}` });
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
     }
-    if (upstream.status === 429) {
-      return errorResponse(request, requestId, 429, "UPSTREAM_RATE_LIMIT", "Mercado Público alcanzó temporalmente su límite de consultas.");
-    }
-    return errorResponse(request, requestId, 502, "UPSTREAM_ERROR", "Mercado Público rechazó la consulta del radar.");
+  } else if (activeScope) {
+    dateQueries.push({ iso: null, upstream: null });
+  } else {
+    dateQueries.push({ iso: dateValue, upstream: `${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${year}` });
   }
 
-  let payload: unknown;
-  try {
-    payload = await readBoundedJson(upstream);
-  } catch (error) {
-    if (error instanceof UpstreamBodyError && error.code === "UPSTREAM_RESPONSE_TOO_LARGE") {
-      return errorResponse(request, requestId, 502, error.code, "La respuesta del radar es demasiado grande.");
+  const byCode = new Map<string, NonNullable<ReturnType<typeof normalizeTenderListResponse>>[number]>();
+  let daysLoaded = 0;
+  let daysFailed = 0;
+  for (const dateQuery of dateQueries) {
+    const upstreamUrl = new URL(`${env.MERCADO_PUBLICO_BASE_URL.replace(/\/$/, "")}/licitaciones.json`);
+    if (dateQuery.upstream) upstreamUrl.searchParams.set("fecha", dateQuery.upstream);
+    upstreamUrl.searchParams.set("estado", "publicada");
+    upstreamUrl.searchParams.set("ticket", env.MERCADO_PUBLICO_TICKET);
+
+    const cacheKey = recentScope && dateQuery.iso ? new Request(`https://radar-cache.licitacontrol.invalid/v1/${dateQuery.iso}`) : null;
+    let upstream = cacheKey ? await caches.default.match(cacheKey) : undefined;
+    let cacheCopy: Response | undefined;
+    if (!upstream) {
+      try {
+        upstream = await fetch(upstreamUrl, {
+          headers: { Accept: "application/json" },
+          redirect: "manual",
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (upstream.ok && cacheKey) cacheCopy = upstream.clone();
+      } catch {
+        console.error(JSON.stringify({ event: "opportunity_radar_request_failed", requestId, date: dateQuery.iso }));
+        daysFailed += 1;
+        continue;
+      }
     }
-    return errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "Mercado Público devolvió una respuesta inválida.");
+    if (!upstream.ok) {
+      console.error(JSON.stringify({ event: "opportunity_radar_bad_status", requestId, status: upstream.status, date: dateQuery.iso }));
+      if (upstream.status === 401 || upstream.status === 403) {
+        return errorResponse(request, requestId, 503, "UPSTREAM_ACCESS_DENIED", "La fuente oficial rechazó el acceso al radar.");
+      }
+      daysFailed += 1;
+      continue;
+    }
+
+    try {
+      const opportunities = normalizeTenderListResponse(await readBoundedJson(upstream));
+      if (!opportunities) {
+        daysFailed += 1;
+        continue;
+      }
+      if (cacheKey && cacheCopy) {
+        try {
+          const headers = new Headers(cacheCopy.headers);
+          headers.set("Cache-Control", "public, max-age=21600");
+          await caches.default.put(cacheKey, new Response(cacheCopy.body, { status: cacheCopy.status, headers }));
+        } catch {
+          console.error(JSON.stringify({ event: "opportunity_radar_cache_write_failed", requestId, date: dateQuery.iso }));
+        }
+      }
+      daysLoaded += 1;
+      for (const opportunity of opportunities) if (!byCode.has(opportunity.code)) byCode.set(opportunity.code, opportunity);
+    } catch {
+      daysFailed += 1;
+    }
   }
-  const opportunities = normalizeTenderListResponse(payload);
-  if (!opportunities) {
-    return errorResponse(request, requestId, 502, "INVALID_UPSTREAM_RESPONSE", "La fuente oficial no devolvió un listado válido.");
+  if (!daysLoaded) {
+    return errorResponse(request, requestId, 502, "UPSTREAM_UNAVAILABLE", "No fue posible cargar ningún día desde Mercado Público.");
   }
-  const limited = opportunities.slice(0, 500);
-  console.log(JSON.stringify({ event: "opportunity_radar_loaded", requestId, resultCount: limited.length, date: dateValue }));
+  const opportunities = [...byCode.values()];
+  const limited = opportunities.slice(0, 5_000);
+  const responseScope = recentScope ? "recent" : activeScope ? "active" : "date";
+  console.log(JSON.stringify({ event: "opportunity_radar_loaded", requestId, resultCount: limited.length, scope: responseScope, daysLoaded, daysFailed }));
   return jsonResponse(request, {
-    data: { date: dateValue, items: limited },
+    data: { scope: responseScope, date: activeScope || recentScope ? null : dateValue, items: limited },
     meta: {
       requestId,
       source: "Dirección ChileCompra · API Mercado Público v1",
       retrievedAt: new Date().toISOString(),
       totalOfficialResults: opportunities.length,
       truncated: opportunities.length > limited.length,
+      daysRequested: dateQueries.length,
+      daysLoaded,
+      daysFailed,
     },
   });
 }

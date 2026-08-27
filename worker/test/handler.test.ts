@@ -43,7 +43,7 @@ describe('Worker v1 request contract', () => {
   it('health confirms configuration only, without contacting the upstream', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const response = await query('/health');
-    expect(await response.json()).toMatchObject({ ok: true, ticketConfigured: true, version: '0.4.1' });
+    expect(await response.json()).toMatchObject({ ok: true, ticketConfigured: true, version: '0.5.0' });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -144,6 +144,32 @@ describe('Worker v1 request contract', () => {
     const upstream = new URL(String(fetchSpy.mock.calls[0][0]));
     expect(upstream.searchParams.get('estado')).toBe('publicada');
     expect(upstream.searchParams.get('ticket')).toBe(ticket);
+  });
+
+  it('lists and deduplicates a recent publication window without leaking the ticket', async () => {
+    const ticket = crypto.randomUUID();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ Listado: [{
+      CodigoExterno: code,
+      Nombre: 'Módulos de madera',
+      Estado: 'Publicada',
+      FechaCierre: '2026-09-01T15:00:00',
+    }] }));
+    const response = await query('/api/oportunidades?alcance=recientes&dias=3', 'GET', ticket);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ data: { scope: 'recent', date: null, items: [{ code }] }, meta: { daysRequested: 3, daysLoaded: 3, daysFailed: 0 } });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    for (const call of fetchSpy.mock.calls) {
+      const upstream = new URL(String(call[0]));
+      expect(upstream.searchParams.get('estado')).toBe('publicada');
+      expect(upstream.searchParams.get('fecha')).toMatch(/^\d{8}$/);
+      expect(upstream.searchParams.get('ticket')).toBe(ticket);
+    }
+  });
+
+  it.each(['0', '15', 'abc'])('rejects an invalid recent window without contacting upstream: %s', async (days) => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    expect((await query(`/api/oportunidades?alcance=recientes&dias=${days}`)).status).toBe(400);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it.each(['', '2026-02-30', '01-01-2026', '2999-01-01'])(

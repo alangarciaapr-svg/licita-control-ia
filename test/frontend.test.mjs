@@ -39,6 +39,13 @@ test('radar matching is deterministic, explainable and respects exclusions and l
   assert.throws(() => buildCommercialProfile('', '', '', '3'));
 });
 
+test('radar matches common Spanish singular and plural forms without changing the visible term', () => {
+  const profile = buildCommercialProfile('maderas', '', '', '0');
+  const match = scoreOpportunity({ name: 'Adquisición de módulos feriales de madera', status: 'Publicada', closing: '2026-09-01T15:00:00' }, profile, '2026-08-26');
+  assert.equal(match.eligible, true);
+  assert.deepEqual(match.matchedKeywords, ['maderas']);
+});
+
 test('static frontend contract: all script IDs exist, no secret field or automatic v2 query', () => {
   const html = readFileSync(new URL('../frontend/index.html', import.meta.url), 'utf8');
   const js = readFileSync(new URL('../frontend/app.js', import.meta.url), 'utf8');
@@ -50,7 +57,7 @@ test('static frontend contract: all script IDs exist, no secret field or automat
   assert.ok(!js.includes('/api/compra-agil'));
   assert.ok(html.includes('id="agile-form"'));
   assert.ok(html.includes('id="radar-form"'));
-  assert.ok(js.includes('/api/oportunidades?fecha='));
+  assert.ok(js.includes('/api/oportunidades?alcance=recientes&dias=10'));
   assert.ok(html.includes('Cotizar en Mercado Público'));
   assert.ok(js.includes('Postular en Mercado Público'));
   assert.ok(!html.includes('name="ticket"'));

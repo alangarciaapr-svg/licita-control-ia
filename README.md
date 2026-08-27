@@ -10,12 +10,12 @@ Este repositorio contiene el primer MVP reconstruido:
 - Entrada raíz `index.html` que dirige a la PWA.
 - Cloudflare Worker en `worker/`.
 - `GET /health` para comprobar la configuración.
-- `GET /api/oportunidades?fecha=AAAA-MM-DD` lista las licitaciones publicadas de un día de los últimos 31 días mediante API v1.
+- `GET /api/oportunidades?alcance=recientes&dias=10` reúne y deduplica las licitaciones publicadas de una ventana reciente mediante API v1. La respuesta informa cuántos días se cargaron; la consulta por `fecha=AAAA-MM-DD` se conserva para diagnóstico acotado.
 - `GET /api/licitacion/{codigo}` es el flujo principal: código oficial → ficha normalizada → frontend.
 - `GET /api/compra-agil` y `GET /api/compra-agil/{codigo}` se conservan en el Worker, pendientes de validación real de acceso v2. El frontend no los consulta automáticamente.
 - La ruta Compra Ágil acepta un código COT ingresado por la persona usuaria y genera un checklist manual. No presenta ese código ni sus datos como verificados mientras API2 no esté validada.
 - Las dos rutas terminan con una continuación explícita a Mercado Público; la aplicación no maneja credenciales de proveedor ni envía ofertas.
-- El perfil comercial (palabras clave, exclusiones, regiones preferidas y plazo mínimo) queda solo en `localStorage`. Al abrir la aplicación se ejecuta automáticamente el radar del día.
+- El perfil comercial (palabras clave, exclusiones, regiones preferidas y plazo mínimo) queda solo en `localStorage`. Al abrir la aplicación se ejecuta automáticamente el radar de los últimos 10 días.
 - El puntaje se calcula en código: coincidencias positivas, región informada, plazo y estado. Las exclusiones y un plazo insuficiente descartan la oportunidad; cada coincidencia visible explica sus señales.
 - El Centro Operativo mantiene una cola local de postulaciones con etapas de análisis, preparación, revisión, lista y enviada.
 - El catálogo empresarial reutiliza SKU, precios de referencia y términos de coincidencia. La bóveda documental guarda archivos en IndexedDB del dispositivo, con categoría y vencimiento.
@@ -103,7 +103,7 @@ El frontend se publica como archivos estáticos en Cloudflare Pages. No necesita
 - No incorpora autenticación ni base de datos remota. La cola, catálogo y bóveda documental son locales al dispositivo; los documentos aún no se analizan automáticamente.
 - El conteo de productos es determinista; el checklist es orientación de revisión y no un dictamen de admisibilidad.
 - Los checks son confirmaciones manuales de la persona usuaria, no verificaciones automáticas ni evidencia de que una oferta fue recibida.
-- La compatibilidad empresarial actual es un filtro textual determinista y explicable; no evalúa por sí sola capacidad, admisibilidad ni probabilidad de adjudicación.
+- La compatibilidad empresarial actual es un filtro textual determinista y explicable, tolerante a formas comunes de singular y plural; no evalúa por sí sola capacidad, admisibilidad ni probabilidad de adjudicación.
 - La postulación oficial continúa realizándose en Mercado Público.
 
 ## Próximos hitos

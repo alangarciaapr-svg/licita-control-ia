@@ -34,6 +34,25 @@ function splitTerms(value) {
   return [...new Set(String(value || '').split(',').map((term) => term.trim()).filter(Boolean))].slice(0, 20);
 }
 
+function wordVariants(word) {
+  const variants = new Set([word]);
+  if (word.length > 3 && word.endsWith('s')) variants.add(word.slice(0, -1));
+  if (word.length > 4 && word.endsWith('es')) variants.add(word.slice(0, -2));
+  return variants;
+}
+
+function textMatchesTerm(text, term) {
+  const textWords = normalizeSearchText(text).match(/[a-z0-9]+/g) || [];
+  const termWords = normalizeSearchText(term).match(/[a-z0-9]+/g) || [];
+  if (!termWords.length || termWords.length > textWords.length) return false;
+  return textWords.some((_, start) => termWords.every((termWord, offset) => {
+    const textWord = textWords[start + offset];
+    if (!textWord) return false;
+    const textVariants = wordVariants(textWord);
+    return [...wordVariants(termWord)].some((variant) => textVariants.has(variant));
+  }));
+}
+
 export function buildCommercialProfile(keywordsValue, exclusionsValue, regionsValue, minimumLeadDaysValue) {
   const keywords = splitTerms(keywordsValue);
   if (!keywords.length) throw new Error('Agrega al menos una palabra o frase que describa lo que vende tu empresa.');
@@ -57,10 +76,10 @@ function daysBetween(dateValue, referenceDate) {
 
 export function scoreOpportunity(opportunity, profile, referenceDate) {
   const searchable = normalizeSearchText([opportunity.name, opportunity.description, opportunity.buyer, opportunity.type].filter(Boolean).join(' '));
-  const matchedKeywords = profile.keywords.filter((term) => searchable.includes(normalizeSearchText(term)));
-  const matchedExclusions = profile.exclusions.filter((term) => searchable.includes(normalizeSearchText(term)));
+  const matchedKeywords = profile.keywords.filter((term) => textMatchesTerm(searchable, term));
+  const matchedExclusions = profile.exclusions.filter((term) => textMatchesTerm(searchable, term));
   const regionText = normalizeSearchText(opportunity.region);
-  const matchedRegions = profile.regions.filter((term) => regionText.includes(normalizeSearchText(term)));
+  const matchedRegions = profile.regions.filter((term) => textMatchesTerm(regionText, term));
   const daysRemaining = daysBetween(opportunity.closing, referenceDate);
   const insufficientTime = daysRemaining !== null && daysRemaining < profile.minimumLeadDays;
   const eligible = matchedKeywords.length > 0 && matchedExclusions.length === 0 && !insufficientTime;

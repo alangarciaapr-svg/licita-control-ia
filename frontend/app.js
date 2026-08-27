@@ -63,7 +63,7 @@ function localDateValue(date = new Date()) {
 }
 
 function renderOpportunities(items, profile, payload) {
-  const referenceDate = payload.data.date;
+  const referenceDate = localDateValue();
   const ranked = items
     .map((opportunity) => ({ opportunity, match: scoreOpportunity(opportunity, profile, referenceDate) }))
     .filter(({ match }) => match.eligible)
@@ -99,7 +99,7 @@ function renderOpportunities(items, profile, payload) {
   if (!cards.length) byId('opportunity-list').append(node('p', 'No hubo coincidencias con las reglas actuales. Ajusta tu perfil o vuelve a actualizar más tarde.', 'message'));
   byId('radar-summary').textContent = `${ranked.length} de ${items.length} oportunidades coinciden`;
   byId('radar-source').textContent = `Cálculo determinista · ${profile.keywords.length} términos activos · máximo 40 resultados visibles`;
-  byId('radar-date').textContent = referenceDate;
+  byId('radar-date').textContent = `Últimos 10 días · ${referenceDate}`;
   byId('radar-results').hidden = false;
   byId('radar-badge').className = 'connection-badge connected';
   byId('radar-badge').textContent = `${ranked.length} priorizadas`;
@@ -109,19 +109,19 @@ async function runRadar(profile, automatic = false) {
   radarRequest?.abort();
   const controller = new AbortController();
   radarRequest = controller;
-  const timeout = setTimeout(() => controller.abort(), 25000);
+  const timeout = setTimeout(() => controller.abort(), 45000);
   byId('radar-button').disabled = true;
   byId('radar-refresh').disabled = true;
   byId('radar-badge').className = 'connection-badge neutral';
   byId('radar-badge').textContent = 'Detectando…';
-  setRadarMessage(automatic ? 'Perfil recuperado. Buscando las oportunidades publicadas hoy…' : 'Consultando oportunidades oficiales publicadas hoy…');
+  setRadarMessage(automatic ? 'Perfil recuperado. Revisando los últimos 10 días…' : 'Consultando oportunidades oficiales de los últimos 10 días…');
   try {
-    const date = localDateValue();
-    const payload = await requestJson(apiUrl, `/api/oportunidades?fecha=${encodeURIComponent(date)}`, controller.signal);
+    const payload = await requestJson(apiUrl, '/api/oportunidades?alcance=recientes&dias=10', controller.signal);
     if (radarRequest !== controller) return;
-    if (payload.data?.date !== date || !Array.isArray(payload.data.items) || !Number.isFinite(Date.parse(payload.meta?.retrievedAt))) throw new Error('El radar recibió una respuesta incompleta o incompatible.');
+    if (payload.data?.scope !== 'recent' || !Array.isArray(payload.data.items) || !Number.isFinite(Date.parse(payload.meta?.retrievedAt)) || !Number.isInteger(payload.meta?.daysLoaded)) throw new Error('El radar recibió una respuesta incompleta o incompatible.');
     renderOpportunities(payload.data.items, profile, payload);
-    setRadarMessage(`Radar actualizado: se revisaron ${payload.data.items.length} licitaciones publicadas el ${date}.`);
+    const coverage = payload.meta.daysFailed ? ` Se cargaron ${payload.meta.daysLoaded} de ${payload.meta.daysRequested} días; puedes actualizar para completar los pendientes.` : '';
+    setRadarMessage(`Radar actualizado: se revisaron ${payload.data.items.length} licitaciones publicadas en la ventana reciente.${coverage}`);
   } catch (error) {
     if (radarRequest !== controller) return;
     byId('radar-badge').className = 'connection-badge disconnected';
